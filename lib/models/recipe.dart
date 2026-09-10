@@ -64,20 +64,22 @@ class Recipe {
       instructions: (json['strInstructions'] ?? '').toString(),
       thumbnail: (json['strMealThumb'] ?? '').toString(),
       ingredients: ingredients,
-      basePortions: json['basePortions'] is int ? json['basePortions'] as int : 4,
+      basePortions: json['basePortions'] is int
+          ? json['basePortions'] as int
+          : 4,
     );
   }
 
   // Sérialise toute la recette (pour sauvegarder un favori en local).
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'category': category,
-        'instructions': instructions,
-        'thumbnail': thumbnail,
-        'basePortions': basePortions,
-        'ingredients': ingredients.map((ing) => ing.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'category': category,
+    'instructions': instructions,
+    'thumbnail': thumbnail,
+    'basePortions': basePortions,
+    'ingredients': ingredients.map((ing) => ing.toJson()).toList(),
+  };
 
   // Relit une recette sauvegardée localement (format de toJson, pas celui de l'API).
   factory Recipe.fromStoredJson(Map<String, dynamic> json) {
@@ -89,8 +91,9 @@ class Recipe {
       category: (json['category'] ?? '').toString(),
       instructions: (json['instructions'] ?? '').toString(),
       thumbnail: (json['thumbnail'] ?? '').toString(),
-      basePortions:
-          json['basePortions'] is int ? json['basePortions'] as int : 4,
+      basePortions: json['basePortions'] is int
+          ? json['basePortions'] as int
+          : 4,
       ingredients: rawIngredients
           .map((e) => Ingredient.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),

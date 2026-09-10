@@ -1,9 +1,4 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Tests de l'écran d'accueil de RecipeBook.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,20 +6,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recipebook/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets("L'accueil affiche l'en-tête et les recettes tendance", (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const RecipeBookApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('RecipeBook'), findsOneWidget);
+    expect(find.text('Bonjour ! 👋'), findsOneWidget);
+    expect(find.text('Recettes tendance'), findsOneWidget);
+    expect(find.text('Poulet rôti aux herbes'), findsOneWidget);
+    expect(find.text('Mode local'), findsOneWidget);
+  });
+
+  testWidgets('La recherche sans résultat affiche l\'état vide', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const RecipeBookApp());
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'zzzzzzzz');
+    await tester.pump();
+
+    expect(find.text('Aucune recette trouvée'), findsOneWidget);
+    expect(find.text('Poulet rôti aux herbes'), findsNothing);
+  });
+
+  testWidgets('Réinitialiser les filtres restaure la liste', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const RecipeBookApp());
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'zzzzzzzz');
+    await tester.pump();
+    expect(find.text('Aucune recette trouvée'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Réinitialiser les filtres'));
+    await tester.tap(find.text('Réinitialiser les filtres'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Poulet rôti aux herbes'), findsOneWidget);
   });
 }
