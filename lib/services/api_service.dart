@@ -37,7 +37,9 @@ class ApiService {
     }
 
     if (response.statusCode != 200) {
-      throw ApiException('Le serveur a répondu ${response.statusCode} pour $url');
+      throw ApiException(
+        'Le serveur a répondu ${response.statusCode} pour $url',
+      );
     }
 
     try {
@@ -49,8 +51,9 @@ class ApiService {
 
   // Recherche par nom : /search.php?s=...
   Future<List<Recipe>> searchRecipesByName(String query) async {
-    final data =
-        await _getJson('search.php?s=${Uri.encodeQueryComponent(query)}');
+    final data = await _getJson(
+      'search.php?s=${Uri.encodeQueryComponent(query)}',
+    );
 
     final meals = data['meals'];
     if (meals == null) return [];
@@ -62,8 +65,7 @@ class ApiService {
 
   // Détail par id : /lookup.php?i=...
   Future<Recipe?> getRecipeById(String id) async {
-    final data =
-        await _getJson('lookup.php?i=${Uri.encodeQueryComponent(id)}');
+    final data = await _getJson('lookup.php?i=${Uri.encodeQueryComponent(id)}');
 
     final meals = data['meals'];
     if (meals == null || (meals as List<dynamic>).isEmpty) return null;
@@ -79,8 +81,10 @@ class ApiService {
     if (categories == null) return [];
 
     return (categories as List<dynamic>)
-        .map((cat) =>
-            (cat as Map<String, dynamic>)['strCategory']?.toString() ?? '')
+        .map(
+          (cat) =>
+              (cat as Map<String, dynamic>)['strCategory']?.toString() ?? '',
+        )
         .where((name) => name.isNotEmpty)
         .toList();
   }
