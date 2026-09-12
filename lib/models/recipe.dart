@@ -32,6 +32,15 @@ class Recipe {
   // TheMealDB ne donne pas le nombre de portions, on part sur 4 par défaut.
   final int basePortions;
 
+  /// Origine géographique de la recette (« British », « Italian »…).
+  final String area;
+
+  /// Étiquettes optionnelles de l'API (« @new-window » sur l'image, etc.).
+  final String tags;
+
+  /// Lien YouTube vers le tutoriel, s'il existe.
+  final String youtubeUrl;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -40,6 +49,9 @@ class Recipe {
     required this.thumbnail,
     required this.ingredients,
     this.basePortions = 4,
+    this.area = '',
+    this.tags = '',
+    this.youtubeUrl = '',
   });
 
   // Parse un "meal" renvoyé par TheMealDB.
@@ -67,6 +79,9 @@ class Recipe {
       basePortions: json['basePortions'] is int
           ? json['basePortions'] as int
           : 4,
+      area: (json['strArea'] ?? json['area'] ?? '').toString(),
+      tags: (json['strTags'] ?? json['tags'] ?? '').toString(),
+      youtubeUrl: (json['strYoutube'] ?? json['youtubeUrl'] ?? '').toString(),
     );
   }
 
@@ -78,6 +93,9 @@ class Recipe {
     'instructions': instructions,
     'thumbnail': thumbnail,
     'basePortions': basePortions,
+    'area': area,
+    'tags': tags,
+    'youtubeUrl': youtubeUrl,
     'ingredients': ingredients.map((ing) => ing.toJson()).toList(),
   };
 
@@ -94,6 +112,9 @@ class Recipe {
       basePortions: json['basePortions'] is int
           ? json['basePortions'] as int
           : 4,
+      area: (json['area'] ?? '').toString(),
+      tags: (json['tags'] ?? '').toString(),
+      youtubeUrl: (json['youtubeUrl'] ?? '').toString(),
       ingredients: rawIngredients
           .map((e) => Ingredient.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),

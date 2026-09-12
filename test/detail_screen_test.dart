@@ -1,27 +1,49 @@
-// Tests de l'écran de détail : ajusteur de portions et cases à cocher.
+// Tests de l'écran de détail : ajusteur de portions et lecture de la recette.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:recipebook/models/recipe.dart';
 import 'package:recipebook/screens/detail_screen.dart';
 
+Recipe _sampleRecipe() {
+  return const Recipe(
+    id: '52771',
+    name: 'Poulet au curry & lait de coco parfumé',
+    category: 'Poulet',
+    instructions: 'Faire dorer le poulet.\nMijoter au lait de coco.',
+    thumbnail: '',
+    ingredients: [
+      Ingredient(name: 'Blancs de poulet coupés en dés', measure: '600g'),
+      Ingredient(name: 'Lait de coco onctueux', measure: '400ml'),
+      Ingredient(name: 'Oignon émincé', measure: '1'),
+      Ingredient(name: 'Riz basmati parfumé', measure: '200g'),
+    ],
+  );
+}
+
 void main() {
+  Future<void> pumpDetail(WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: DetailScreen(recipe: _sampleRecipe())),
+    );
+    await tester.pump();
+  }
+
   testWidgets('Affiche la recette et les quantités de base (4 pers.)', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: DetailScreen()));
-    await tester.pump();
+    await pumpDetail(tester);
 
     expect(find.text('Poulet au curry & lait de coco parfumé'), findsOneWidget);
-    expect(find.text('600 g'), findsOneWidget); // poulet, base 4 pers.
-    expect(find.text('400 ml'), findsOneWidget); // lait de coco
+    expect(find.text('600g'), findsOneWidget); // poulet, base 4 pers.
+    expect(find.text('400ml'), findsOneWidget); // lait de coco
   });
 
   testWidgets('Le + recalcule les quantités (règle de trois)', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: DetailScreen()));
-    await tester.pump();
+    await pumpDetail(tester);
 
     // 4 -> 6 personnes via le préréglage.
     await tester.ensureVisible(find.text('6'));
@@ -29,40 +51,61 @@ void main() {
     await tester.pump();
 
     // 600 g * 6/4 = 900 g ; 400 ml * 6/4 = 600 ml.
-    expect(find.text('900 g'), findsOneWidget);
-    expect(find.text('600 ml'), findsOneWidget);
-    expect(find.text('600 g'), findsNothing);
+    expect(find.text('900g'), findsOneWidget);
+    expect(find.text('600ml'), findsOneWidget);
+    expect(find.text('600g'), findsNothing);
   });
 
-  testWidgets('Cocher un ingrédient le marque comme fait', (
+  testWidgets('La liste d\'ingrédients est en lecture seule', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: DetailScreen()));
-    await tester.pump();
+    await pumpDetail(tester);
 
     final ingredient = find.text('Riz basmati parfumé');
     expect(ingredient, findsOneWidget);
+    expect(find.text('200g'), findsOneWidget);
 
+    // Un simple tap ne coche rien : le nom n'est pas barré.
     await tester.ensureVisible(ingredient);
     await tester.tap(ingredient);
     await tester.pump();
 
     final textWidget = tester.widget<Text>(ingredient);
-    expect(textWidget.style?.decoration, TextDecoration.lineThrough);
+    expect(textWidget.style?.decoration, isNot(TextDecoration.lineThrough));
   });
 
-  testWidgets('Le badge convives suit le nombre de portions', (
+  testWidgets('Le badge personnes suit le nombre de portions', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: DetailScreen()));
-    await tester.pump();
+    await pumpDetail(tester);
 
-    expect(find.text('Affichage : 4 convives'), findsOneWidget);
+    expect(find.text('Recette pour 4 personnes'), findsOneWidget);
 
     await tester.ensureVisible(find.text('8'));
     await tester.tap(find.text('8'));
     await tester.pump();
 
-    expect(find.text('Affichage : 8 convives'), findsOneWidget);
+    expect(find.text('Recette pour 8 personnes'), findsOneWidget);
+  });
+
+  testWidgets('Un toast confirme l\'ajout puis le retrait des favoris', (
+    WidgetTester tester,
+  ) async {
+    await pumpDetail(tester);
+
+    // Ajout via le bouton principal en bas.
+    await tester.tap(find.text('Ajouter à mes favoris'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Ajoutée à vos favoris'), findsOneWidget);
+
+    // Retrait : un toast avec le bon libellé apparaît.
+    await tester.tap(find.text('Sauvegardé dans mes favoris'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.text('Retirée de vos favoris'), findsOneWidget);
   });
 }

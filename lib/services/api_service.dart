@@ -99,5 +99,79 @@ class ApiService {
     return Recipe.fromJson(meals.first as Map<String, dynamic>);
   }
 
+  // Plusieurs recettes au hasard (pour la page d'accueil) : on consulte
+  // /random.php plusieurs fois et on dédoublonne par id.
+  Future<List<Recipe>> getRandomMeals(int count) async {
+    final seen = <String>{};
+    final recipes = <Recipe>[];
+
+    final results = await Future.wait([
+      for (var i = 0; i < count; i++) _getJson('random.php'),
+    ]);
+
+    for (final data in results) {
+      final meals = data['meals'];
+      if (meals == null || (meals as List<dynamic>).isEmpty) continue;
+
+      final recipe = Recipe.fromJson(meals.first as Map<String, dynamic>);
+      if (recipe.id.isNotEmpty && seen.add(recipe.id)) {
+        recipes.add(recipe);
+      }
+    }
+
+    return recipes;
+  }
+
+  // Recettes d'une catégorie : /filter.php?c=...
+  Future<List<Recipe>> getRecipesByCategory(String category) async {
+    final data = await _getJson(
+      'filter.php?c=${Uri.encodeQueryComponent(category)}',
+    );
+
+    final meals = data['meals'];
+    if (meals == null) return [];
+
+    return (meals as List<dynamic>)
+        .map((meal) => Recipe.fromJson(meal as Map<String, dynamic>))
+        .toList();
+  }
+
+  // « Toutes les recettes » : composition par catégorie. L'API free ne
+  // fournit pas de liste exhaustive, on regroupe donc toutes les catégories,
+  // en petits lots parallèles pour ne pas saturer le serveur, avec tolérance
+  // aux échecs partiels (une catégorie en erreur n'annule pas le reste).
+  Future<List<Recipe>> getRecipesByCategories(List<String> categories) async {
+    const batchSize = 4;
+    final merged = <Recipe>[];
+    final seen = <String>{};
+
+    for (var start = 0; start < categories.length; start += batchSize) {
+      final batch = categories.skip(start).take(batchSize).toList();
+      final results = await Future.wait(
+        [
+          for (final category in batch) _getRecipesByCategoryQuiet(category),
+        ],
+      );
+
+      for (final recipes in results) {
+        for (final recipe in recipes) {
+          if (recipe.id.isNotEmpty && seen.add(recipe.id)) {
+            merged.add(recipe);
+          }
+        }
+      }
+    }
+
+    return merged;
+  }
+
+  Future<List<Recipe>> _getRecipesByCategoryQuiet(String category) async {
+    try {
+      return await getRecipesByCategory(category);
+    } on ApiException {
+      return [];
+    }
+  }
+
   void dispose() => _client.close();
 }

@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Accès au réseau (API TheMealDB + miniatures). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="recipebook"
+        android:label="RecipeBook"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

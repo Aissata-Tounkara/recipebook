@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<!-- saved from url=(0039)https://www.themealdb.com/documentation -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="TheMealDB API Guide">
+	<meta name="description" content="A cleaner guide to TheMealDB API, including free and premium access, authentication, and endpoint references.">
+	<meta name="author" content="TheMealDB">
+	<title>TheMealDB.com - API Guide</title>
+		<!-- CSS Scripts -->
+	<link href="./TheMealDB.com - API Guide_files/bootstrap.min.css" rel="stylesheet">
+	<link href="./TheMealDB.com - API Guide_files/main.css" rel="stylesheet">
+	<!-- Favicon Includes -->
+	<link rel="apple-touch-icon" sizes="180x180" href="https://www.themealdb.com/images/icons/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="https://www.themealdb.com/images/icons/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://www.themealdb.com/images/icons/favicon/favicon-16x16.png">
+	<link rel="mask-icon" href="https://www.themealdb.com/images/icons/favicon/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="msapplication-TileColor" content="#da532c">
+	<meta name="theme-color" content="#ffffff">
+
+	<script src="./TheMealDB.com - API Guide_files/script.js" data-site-id="be2af4c26f56" defer=""></script>
+	<link rel="canonical" href="https://www.themealdb.com/docs_api_guide.php">
+	<link rel="alternate" type="text/markdown" href="https://www.themealdb.com/AGENTS.md" title="TheMealDB guide for AI agents">
+	<link rel="alternate" type="text/markdown" href="https://www.themealdb.com/SKILL.md" title="TheMealDB AI skill">
+	<link rel="service-desc" type="application/yaml" href="https://www.themealdb.com/api/spec/openapi-v1.yaml" title="TheMealDB OpenAPI V1 specification">
+	<link rel="service-desc" type="application/yaml" href="https://www.themealdb.com/api/spec/openapi-v2.yaml" title="TheMealDB OpenAPI V2 specification">
+	<style>
+		body.docs-page {
+			background: #1e1b17;
+			color: #e8dfd5;
+		}
+
+		body.docs-page h1,
+		body.docs-page h2,
+		body.docs-page h3,
+		body.docs-page h4,
+		body.docs-page h5,
+		body.docs-page h6 {
+			font-family: 'Open Sans', sans-serif;
+			color: #f5ede2;
+		}
+
+		body.docs-page a {
+			color: #ffb25b;
+		}
+
+		body.docs-page a:hover,
+		body.docs-page a:focus {
+			color: #ffd18b;
+		}
+
+		.docs-shell {
+			padding: 28px 0 44px;
+		}
+
+		.docs-hero {
+			background:
+				linear-gradient(135deg, rgba(22, 17, 13, 0.97), rgba(61, 38, 23, 0.95)),
+				url('/images/separator.jpg');
+			background-size: cover;
+			background-position: center;
+			color: #f5ede2;
+			border-radius: 24px;
+			padding: 36px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+			margin-bottom: 24px;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+		}
+
+		.docs-hero h1 {
+			margin: 0 0 10px;
+			font-size: clamp(2rem, 4vw, 3.25rem);
+			font-weight: 800;
+		}
+
+		.docs-hero p {
+			max-width: 900px;
+			font-size: 1.05rem;
+			line-height: 1.7;
+			margin: 0;
+			color: rgba(245, 237, 226, 0.92);
+		}
+
+		.docs-pill-row {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-top: 18px;
+		}
+
+		.docs-pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 10px 14px;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.08);
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			color: #f5ede2;
+			font-weight: 600;
+		}
+
+		.docs-layout {
+			display: grid;
+			grid-template-columns: 280px minmax(0, 1fr);
+			gap: 24px;
+			align-items: start;
+		}
+
+		.docs-toc {
+			position: sticky;
+			top: 18px;
+			background: #2a241f;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 20px;
+			padding: 18px;
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+		}
+
+		.docs-toc h2 {
+			font-size: 1.1rem;
+			margin: 0 0 12px;
+		}
+
+		.docs-toc a {
+			display: block;
+			padding: 8px 10px;
+			margin: 2px 0;
+			border-radius: 12px;
+			color: #ffb25b;
+			font-weight: 600;
+		}
+
+		.docs-toc a:hover {
+			background: rgba(255, 255, 255, 0.05);
+			text-decoration: none;
+		}
+
+		.docs-panel {
+			background: #231f1b;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 24px;
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+			padding: 24px;
+		}
+
+		.docs-section {
+			padding: 8px 0 22px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+			margin-bottom: 22px;
+		}
+
+		.docs-section:last-child {
+			border-bottom: 0;
+			margin-bottom: 0;
+			padding-bottom: 0;
+		}
+
+		.docs-section h2 {
+			margin: 0 0 14px;
+			font-size: clamp(1.5rem, 2vw, 2rem);
+		}
+
+		.docs-section p {
+			line-height: 1.75;
+			color: #d4c8bb;
+			margin-bottom: 12px;
+		}
+
+		.docs-card-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.docs-card {
+			background: #2a241f;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 18px;
+			padding: 18px;
+		}
+
+		.docs-card h3 {
+			font-size: 1.05rem;
+			margin: 0 0 10px;
+		}
+
+		.docs-upgrade-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 9px;
+			margin-top: 8px;
+			padding: 7px 12px 7px 8px;
+			border-radius: 999px;
+			background: linear-gradient(180deg, #0070ba 0%, #003087 100%);
+			border: 1px solid rgba(0, 48, 135, 0.85);
+			color: #fff;
+			font-weight: 700;
+			font-size: 0.78rem;
+			line-height: 1;
+			letter-spacing: 0.01em;
+			box-shadow: 0 8px 18px rgba(0, 48, 135, 0.22);
+			white-space: nowrap;
+			text-decoration: none;
+		}
+
+		.docs-upgrade-btn:hover,
+		.docs-upgrade-btn:focus {
+			background: linear-gradient(180deg, #0a7fd4 0%, #003d8f 100%);
+			color: #fff;
+			text-decoration: none;
+			box-shadow: 0 10px 22px rgba(0, 48, 135, 0.28);
+		}
+
+		.docs-upgrade-mark {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 22px;
+			height: 22px;
+			border-radius: 50%;
+			background: #fff;
+			color: #003087;
+			font-size: 0.72rem;
+			font-weight: 900;
+			line-height: 1;
+			flex: 0 0 auto;
+			position: relative;
+		}
+
+		.docs-upgrade-mark::before,
+		.docs-upgrade-mark::after {
+			content: "P";
+			position: absolute;
+			top: 50%;
+			transform: translateY(-50%);
+			font-weight: 900;
+			line-height: 1;
+		}
+
+		.docs-upgrade-mark::before {
+			left: 4px;
+			color: #003087;
+		}
+
+		.docs-upgrade-mark::after {
+			left: 9px;
+			color: #009cde;
+		}
+
+		.docs-upgrade-text {
+			font-weight: 800;
+			letter-spacing: 0.015em;
+			color: #cfe3ff;
+		}
+
+		.docs-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-bottom: 10px;
+		}
+
+		.docs-badge {
+			display: inline-flex;
+			align-items: center;
+			padding: 5px 10px;
+			border-radius: 999px;
+			background: rgba(255, 178, 91, 0.16);
+			color: #ffcb89;
+			font-size: 0.84rem;
+			font-weight: 700;
+		}
+
+		.docs-badge.premium {
+			background: rgba(255, 196, 112, 0.14);
+			color: #ffd7a3;
+		}
+
+		.docs-badge.free {
+			background: rgba(122, 183, 127, 0.16);
+			color: #b7e0bb;
+		}
+
+		.docs-endpoint {
+			display: block;
+			margin: 10px 0 12px;
+			padding: 12px 14px;
+			border-radius: 14px;
+			background: #15120f;
+			color: #f8f1e8;
+			font-size: 0.94rem;
+			overflow-x: auto;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+		}
+
+		.docs-endpoint a {
+			color: inherit;
+			display: block;
+		}
+
+		.docs-endpoint code {
+			background: transparent;
+			color: inherit;
+			padding: 0;
+		}
+
+		.docs-note {
+			background: linear-gradient(180deg, #2b241e, #241f1a);
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 18px;
+			padding: 18px;
+			margin-top: 16px;
+		}
+
+		.docs-note strong {
+			display: block;
+			margin-bottom: 4px;
+			color: #ffd18b;
+		}
+
+		.docs-list {
+			margin: 0;
+			padding-left: 18px;
+			color: #d4c8bb;
+		}
+
+		.docs-list li {
+			margin: 8px 0;
+		}
+
+		.docs-grid-3 {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.docs-grid-2 {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.docs-base-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+			margin-bottom: 16px;
+		}
+
+		.docs-code {
+			background: #f6fafb;
+			border: 1px solid rgba(15, 30, 41, 0.08);
+			border-radius: 16px;
+			padding: 14px 16px;
+			overflow-x: auto;
+			font-size: 0.92rem;
+		}
+
+		.docs-images {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+			align-items: start;
+		}
+
+		.docs-images .docs-card {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+		}
+
+		.docs-images .docs-card .docs-endpoint {
+			width: 100%;
+			text-align: left;
+		}
+
+		.docs-preview {
+			max-width: 100%;
+			display: block;
+			margin: 4px auto 0;
+			border-radius: 16px;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+		}
+
+		body.docs-page,
+		body.docs-page * {
+			box-sizing: border-box;
+		}
+
+		.docs-hero,
+		.docs-panel,
+		.docs-toc,
+		.docs-card {
+			min-width: 0;
+		}
+
+		.docs-card-grid>*,
+		.docs-grid-2>*,
+		.docs-grid-3>*,
+		.docs-base-grid>*,
+		.docs-images>* {
+			min-width: 0;
+		}
+
+		.docs-section p,
+		.docs-card p,
+		.docs-toc a,
+		.docs-hero p {
+			overflow-wrap: anywhere;
+		}
+
+		@media (max-width: 992px) {
+
+			.docs-layout,
+			.docs-card-grid,
+			.docs-grid-3,
+			.docs-images {
+				grid-template-columns: 1fr;
+			}
+
+			.docs-toc {
+				position: static;
+			}
+		}
+
+		@media (max-width: 767px) {
+			.docs-shell {
+				padding: 18px 0 28px;
+			}
+
+			.docs-hero {
+				padding: 22px 18px;
+				border-radius: 18px;
+			}
+
+			.docs-panel {
+				padding: 18px;
+				border-radius: 18px;
+			}
+
+			.docs-card,
+			.docs-toc {
+				border-radius: 16px;
+			}
+
+			.docs-grid-2,
+			.docs-base-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.docs-upgrade-btn {
+				white-space: normal;
+				width: 100%;
+				justify-content: center;
+				text-align: center;
+			}
+
+			.docs-endpoint {
+				padding: 10px 12px;
+			}
+		}
+		.agent-resource-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 16px;
+		}
+
+		.agent-resource {
+			display: block;
+			padding: 15px;
+			color: rgba(255, 255, 255, 0.9) !important;
+			text-decoration: none !important;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			border-radius: 12px;
+		}
+
+		.agent-resource:hover,
+		.agent-resource:focus {
+			border-color: #ffa700;
+		}
+
+		.agent-resource strong,
+		.agent-resource code {
+			display: block;
+		}
+
+		.agent-resource code {
+			margin-top: 8px;
+			color: #ec8ae7;
+			word-break: break-all;
+		}
+
+		@media (max-width: 600px) {
+			.agent-resource-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+<style>.driver-active .driver-overlay,.driver-active *{pointer-events:none}.driver-active .driver-active-element,.driver-active .driver-active-element *,.driver-popover,.driver-popover *{pointer-events:auto}@keyframes animate-fade-in{0%{opacity:0}to{opacity:1}}.driver-fade .driver-overlay{animation:animate-fade-in .2s ease-in-out}.driver-fade .driver-popover{animation:animate-fade-in .2s}.driver-popover{all:unset;box-sizing:border-box;color:#2d2d2d;margin:0;padding:15px;border-radius:5px;min-width:250px;max-width:300px;box-shadow:0 1px 10px rgba(0,0,0,.4);z-index:1000000000;position:fixed;top:0;right:0;background-color:#fff}.driver-popover *{font-family:Helvetica Neue,Inter,ui-sans-serif,"Apple Color Emoji",Helvetica,Arial,sans-serif}.driver-popover-title{font:19px/normal sans-serif;font-weight:700;display:block;position:relative;line-height:1.5;zoom:1;margin:0}.driver-popover-close-btn{all:unset;position:absolute;top:0;right:0;width:32px;height:28px;cursor:pointer;font-size:18px;font-weight:500;color:#d2d2d2;z-index:1;text-align:center;transition:color;transition-duration:.2s}.driver-popover-close-btn:hover,.driver-popover-close-btn:focus{color:#2d2d2d}.driver-popover-title[style*=block]+.driver-popover-description{margin-top:5px}.driver-popover-description{margin-bottom:0;font:14px/normal sans-serif;line-height:1.5;font-weight:400;zoom:1}.driver-popover-footer{margin-top:15px;text-align:right;zoom:1;display:flex;align-items:center;justify-content:space-between}.driver-popover-progress-text{font-size:13px;font-weight:400;color:#727272;zoom:1}.driver-popover-footer button{all:unset;display:inline-block;box-sizing:border-box;padding:3px 7px;text-decoration:none;text-shadow:1px 1px 0 #fff;background-color:#fff;color:#2d2d2d;font:12px/normal sans-serif;cursor:pointer;outline:0;zoom:1;line-height:1.3;border:1px solid #ccc;border-radius:3px}.driver-popover-footer .driver-popover-btn-disabled{opacity:.5;pointer-events:none}:not(body):has(>.driver-active-element){overflow:hidden !important}.driver-no-interaction,.driver-no-interaction *{pointer-events:none !important}.driver-popover-footer button:hover,.driver-popover-footer button:focus{background-color:#f7f7f7}.driver-popover-navigation-btns{display:flex;flex-grow:1;justify-content:flex-end}.driver-popover-navigation-btns button+button{margin-left:4px}.driver-popover-arrow{content:"";position:absolute;border:5px solid #fff}.driver-popover-arrow-side-over{display:none}.driver-popover-arrow-side-left{left:100%;border-right-color:transparent;border-bottom-color:transparent;border-top-color:transparent}.driver-popover-arrow-side-right{right:100%;border-left-color:transparent;border-bottom-color:transparent;border-top-color:transparent}.driver-popover-arrow-side-top{top:100%;border-right-color:transparent;border-bottom-color:transparent;border-left-color:transparent}.driver-popover-arrow-side-bottom{bottom:100%;border-left-color:transparent;border-top-color:transparent;border-right-color:transparent}.driver-popover-arrow-side-center{display:none}.driver-popover-arrow-side-left.driver-popover-arrow-align-start,.driver-popover-arrow-side-right.driver-popover-arrow-align-start{top:15px}.driver-popover-arrow-side-top.driver-popover-arrow-align-start,.driver-popover-arrow-side-bottom.driver-popover-arrow-align-start{left:15px}.driver-popover-arrow-align-end.driver-popover-arrow-side-left,.driver-popover-arrow-align-end.driver-popover-arrow-side-right{bottom:15px}.driver-popover-arrow-side-top.driver-popover-arrow-align-end,.driver-popover-arrow-side-bottom.driver-popover-arrow-align-end{right:15px}.driver-popover-arrow-side-left.driver-popover-arrow-align-center,.driver-popover-arrow-side-right.driver-popover-arrow-align-center{top:50%;margin-top:-5px}.driver-popover-arrow-side-top.driver-popover-arrow-align-center,.driver-popover-arrow-side-bottom.driver-popover-arrow-align-center{left:50%;margin-left:-5px}.driver-popover-arrow-none{display:none}</style></head>
+
+<body class="homepage docs-page" cz-shortcut-listen="true">
+	<!-- Navbar -->
+
+<nav class="navbar navbar-expand-sm navbar-inverse navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="https://www.themealdb.com/"><img src="./TheMealDB.com - API Guide_files/logo.svg" alt="TheMealDB Website Logo" loading="eager" title="TheMealDB logo" width="300" height="64"></a>
+        <!-- Burger Menu -->
+        <button class="navbar-toggler collapsed navbar-inverse" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar" aria-expanded="false">
+            <span class="navbar-toggler-icon white"></span>
+        </button>
+        <!-- Large Menu -->
+        <div class="navbar-collapse collapse" id="mynavbar">
+            <ul class="navbar-nav ms-auto">
+                <!-- Browse Dropdown -->
+                <li><a href="https://www.themealdb.com/">Home</a></li>
+                    <li><a href="https://www.themealdb.com/documentation">API</a></li>
+
+                        <!-- Search Box -->
+                        <li class="nav-item">
+                            <div class="search">
+                                <form role="form" action="https://www.themealdb.com/browse/search/">
+                                    <input type="text" name="s" class="search-form" autocomplete="off" placeholder=" Search">
+                                </form>
+                            </div>
+                        </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+	<div class="container docs-shell">
+		<section class="docs-hero">
+			<h1>TheMealDB API Guide</h1>
+			<p>
+				An Easy to use Meal Recipe API for Developers and Food Lovers. Explore our comprehensive guide to TheMealDB API, including free and premium access, authentication, and detailed endpoint references to help you get the most out of our meal database.
+			</p>
+			<div class="docs-pill-row">
+				<span class="docs-pill">Free test key: <code>1</code></span>
+				<span class="docs-pill">Premium unlocks v2</span>
+				<span class="docs-pill">Browser-friendly examples</span>
+			</div>
+		</section>
+
+		<div class="docs-layout">
+			<aside class="docs-toc" aria-label="Table of contents">
+				<h2>On this page</h2>
+				<a href="https://www.themealdb.com/documentation#getting-started">Getting Started</a>
+				<a href="https://www.themealdb.com/documentation#access">Access Tiers</a>
+				<a href="https://www.themealdb.com/documentation#agent-resources">AI Agents &amp; OpenAPI</a>
+				<a href="https://www.themealdb.com/documentation#authentication">Authentication</a>
+				<a href="https://www.themealdb.com/documentation#v1">V1 API Reference</a>
+				<a href="https://www.themealdb.com/documentation#search">Search</a>
+				<a href="https://www.themealdb.com/documentation#lookup">Lookup</a>
+				<a href="https://www.themealdb.com/documentation#list">List and Filter</a>
+				<a href="https://www.themealdb.com/documentation#media">Images</a>
+			</aside>
+
+			<main class="docs-panel">
+				<section class="docs-section" id="getting-started">
+					<h2>Getting Started</h2>
+					<p>
+						TheMealDB API is designed to be simple to test in a browser while still supporting
+						production use with a supporter key. The free tier is ideal for development and
+						educational use, while premium access expands the API with the beta V2 endpoints and
+						additional limits.
+					</p>
+					<div class="docs-card-grid">
+						<div class="docs-card" id="access">
+							<div class="docs-meta">
+								<span class="docs-badge free">Free API</span>
+							</div>
+							<h3>Free access</h3>
+							<p>The site and API remain free at point of access for testing and personal projects.</p>
+						</div>
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge free">Test key</span>
+							</div>
+							<h3>Developer key</h3>
+							<p>Use API key <code>1</code> while developing or learning the API.</p>
+						</div>
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge premium">Premium upgrade</span>
+							</div>
+							<h3>Supporter access</h3>
+							<p>Premium users receive the beta V2 API, multi-ingredient filters, larger limits, and upload features.</p>
+						</div>
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge">Contact</span>
+							</div>
+							<h3>Need premium help?</h3>
+							<p>Email: <strong>thedatadb (at) gmail.com</strong></p>
+						</div>
+					</div>
+				</section>
+
+				<section class="docs-section" id="agent-resources">
+					<h2>AI Agents &amp; OpenAPI</h2>
+					<p>
+						These public, machine-readable resources help people, AI agents, Swagger,
+						and code generators understand and integrate TheMealDB. The OpenAPI files
+						contain placeholders only and do not expose API keys; supply your own key
+						when making requests.
+					</p>
+					<div class="agent-resource-grid">
+						<a class="agent-resource" href="https://www.themealdb.com/AGENTS.md" type="text/markdown" rel="alternate">
+							<strong>AI Agent Guide</strong>
+							<span>Capabilities, API workflow, response fields, attribution, and responsible-use guidance.</span>
+							<code>/AGENTS.md</code>
+						</a>
+						<a class="agent-resource" href="https://www.themealdb.com/SKILL.md" type="text/markdown" rel="alternate">
+							<strong>AI Skill</strong>
+							<span>Reusable instructions for finding, checking, and presenting meal data accurately.</span>
+							<code>/SKILL.md</code>
+						</a>
+						<a class="agent-resource" href="https://www.themealdb.com/api/spec/openapi-v1.yaml" type="application/yaml" rel="service-desc" data-api-version="1">
+							<strong>OpenAPI V1</strong>
+							<span>Swagger-compatible specification for the stable V1 JSON endpoints.</span>
+							<code>/api/spec/openapi-v1.yaml</code>
+						</a>
+						<a class="agent-resource" href="https://www.themealdb.com/api/spec/openapi-v2.yaml" type="application/yaml" rel="service-desc" data-api-version="2">
+							<strong>OpenAPI V2</strong>
+							<span>Swagger-compatible specification for the V2 JSON endpoints and discovery methods.</span>
+							<code>/api/spec/openapi-v2.yaml</code>
+						</a>
+					</div>
+				</section>
+
+				<section class="docs-section" id="authentication">
+					<h2>Authentication</h2>
+					<p>
+						V1 uses the API key directly in the URL path, which makes it easy to test in a browser.
+						V2 uses the same format just with an updated v2 base URL. For premium access, replace the test key with your supporter key.
+					</p>
+					<div class="docs-base-grid">
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge free">V1 base URL</span>
+							</div>
+							<div class="docs-code"><code>https://www.themealdb.com/api/json/v1/</code></div>
+						</div>
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge premium">Premium V2 base URL</span>
+							</div>
+							<div class="docs-code"><code>https://www.themealdb.com/api/json/v2/</code></div>
+						</div>
+					</div>
+					<div class="docs-grid-2">
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge free">Free key</span>
+							</div>
+							<div class="docs-code"><code>/1/</code></div>
+						</div>
+						<div class="docs-card">
+							<div class="docs-meta">
+								<span class="docs-badge premium">Premium key</span>
+							</div>
+							<div class="docs-code"><code>/YOUR_API_KEY/</code></div>
+						</div>
+					</div>
+					<div class="docs-note">
+						<strong>Production note</strong>
+						If you are shipping an app publicly, you should become a supporter to get a production API key and access the unlimited V2 endpoints.
+					</div>
+				</section>
+
+				<section class="docs-section" id="v1">
+					<h2>V1 API Reference</h2>
+					<p>
+						These are the core meal endpoints available in V1. The examples below use the free test key
+						<code>1</code>.
+					</p>
+
+					<div class="docs-section" id="search" style="border-bottom: 0; margin-bottom: 0;">
+						<h3>Search endpoints</h3>
+						<div class="docs-card-grid">
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Search meal by name</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/search.php?s=Arrabiata</code></a></div>
+								<p>Search meals by their full name.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>List meals by first letter</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/search.php?f=a" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/search.php?f=a</code></a></div>
+								<p>Return meals whose names begin with the given letter.</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="docs-section" id="lookup">
+						<h3>Lookup endpoints</h3>
+						<div class="docs-card-grid">
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Lookup full meal details by ID</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/lookup.php?i=52772</code></a></div>
+								<p>Lookup the full recipe payload for a meal.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Lookup a single random meal</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/random.php" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/random.php</code></a></div>
+								<p>Return one random meal.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge premium">Premium only</span>
+								</div>
+								<h3>Random 10 meals</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v2/1/randomselection.php" target="_blank" rel="noopener"><code>themealdb.com/api/json/v2/1/randomselection.php</code></a></div>
+								<p>Return a larger random meal selection for supporters.</p>
+								<a class="docs-upgrade-btn" href="https://www.paypal.com/ncp/payment/V89GU8TEDVP9S" target="_blank" rel="noopener" aria-label="PayPal checkout"><span class="docs-upgrade-mark" aria-hidden="true"></span><span class="docs-upgrade-text">£10 lifetime upgrade</span></a>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge premium">Premium only</span>
+								</div>
+								<h3>Latest 10 meals</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v2/1/latest.php" target="_blank" rel="noopener"><code>themealdb.com/api/json/v2/1/latest.php</code></a></div>
+								<p>Return recently added meals from the premium V2 API.</p>
+								<a class="docs-upgrade-btn" href="https://www.paypal.com/ncp/payment/V89GU8TEDVP9S" target="_blank" rel="noopener" aria-label="PayPal checkout"><span class="docs-upgrade-mark" aria-hidden="true"></span><span class="docs-upgrade-text">£10 lifetime upgrade</span></a>
+							</div>
+						</div>
+					</div>
+
+					<div class="docs-section" id="list">
+						<h3>List and filter endpoints</h3>
+						<div class="docs-card-grid">
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>List categories</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/categories.php" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/categories.php</code></a></div>
+								<p>Return all meal categories.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>List all Categories, Areas, Ingredients</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/list.php?c=list" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/list.php?c=list</code></a></div>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/list.php?a=list" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/list.php?a=list</code></a></div>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/list.php?i=list" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/list.php?i=list</code></a></div>
+								<p>Get browseable lists for categories, areas, and ingredients.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Filter by main ingredient</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/filter.php?i=chicken_breast</code></a></div>
+								<p>Filter meals that include a single ingredient.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge premium">Premium only</span>
+								</div>
+								<h3>Filter by multiple ingredients</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v2/1/filter.php?i=chicken_breast,garlic,salt" target="_blank" rel="noopener"><code>themealdb.com/api/json/v2/1/filter.php?i=chicken_breast,garlic,salt</code></a></div>
+								<p>Multi-ingredient filtering is available on the beta V2 API for supporters.</p>
+								<a class="docs-upgrade-btn" href="https://www.paypal.com/ncp/payment/V89GU8TEDVP9S" target="_blank" rel="noopener" aria-label="PayPal checkout"><span class="docs-upgrade-mark" aria-hidden="true"></span><span class="docs-upgrade-text">£10 lifetime upgrade</span></a>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Filter by category</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/filter.php?c=Seafood</code></a></div>
+								<p>Browse meals by category name.</p>
+							</div>
+							<div class="docs-card">
+								<div class="docs-meta">
+									<span class="docs-badge free">Free</span>
+								</div>
+								<h3>Filter by area</h3>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/filter.php?a=Canada" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/filter.php?a=Canada</code></a></div>
+								<div class="docs-endpoint"><a href="https://www.themealdb.com/api/json/v1/1/filter.php?a=Canadian" target="_blank" rel="noopener"><code>themealdb.com/api/json/v1/1/filter.php?a=Canadian</code></a></div>
+								<p>Browse meals by Country or Region.</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section class="docs-section" id="media">
+					<h2>Images</h2>
+					<p>
+						TheMealDB includes meal and ingredient artwork. Meal images support preview variants, and ingredient artwork uses the ingredient name in the filename.
+					</p>
+
+					<div class="docs-images">
+						<div class="docs-card">
+							<h3>Meal thumbnail images</h3>
+							<p>Add <code>/small</code>, <code>/medium</code>, or <code>/large</code> to the meal image URL.</p>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg" target="_blank" rel="noopener"><code>/images/media/meals/llcbn01574260722.jpg</code></a></div>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg/small" target="_blank" rel="noopener"><code>/images/media/meals/llcbn01574260722.jpg/small</code></a></div>
+							<div class="docs-endpoint"><a href="./TheMealDB.com - API Guide_files/medium" target="_blank" rel="noopener"><code>/images/media/meals/llcbn01574260722.jpg/medium</code></a></div>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg/large" target="_blank" rel="noopener"><code>/images/media/meals/llcbn01574260722.jpg/large</code></a></div>
+							<a href="https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg" target="_blank" rel="noopener">
+								<img class="docs-preview" src="./TheMealDB.com - API Guide_files/medium" alt="Meal thumbnail preview" loading="lazy" width="350" height="350">
+							</a>
+						</div>
+						<div class="docs-card">
+							<h3>Ingredient thumbnail images</h3>
+							<p>Add <code>/small</code>, <code>/medium</code>, or <code>/large</code> to the ingredient image URL.</p>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/ingredients/olive_oil.png" target="_blank" rel="noopener"><code>/images/ingredients/olive_oil.png</code></a></div>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/ingredients/olive_oil.png/small" target="_blank" rel="noopener"><code>/images/ingredients/olive_oil.png/small</code></a></div>
+							<div class="docs-endpoint"><a href="./TheMealDB.com - API Guide_files/medium(1)" target="_blank" rel="noopener"><code>/images/ingredients/olive_oil.png/medium</code></a></div>
+							<div class="docs-endpoint"><a href="https://www.themealdb.com/images/ingredients/olive_oil.png/large" target="_blank" rel="noopener"><code>/images/ingredients/olive_oil.png/large</code></a></div>
+							<a href="https://www.themealdb.com/images/ingredients/olive_oil.png" target="_blank" rel="noopener">
+								<img class="docs-preview" src="./TheMealDB.com - API Guide_files/medium(1)" alt="Ingredient thumbnail preview" loading="lazy" width="350" height="350">
+							</a>
+						</div>
+					</div>
+				</section>
+			</main>
+		</div>
+	</div>
+
+	<footer id="footer" class="midnight-blue">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-3">
+                © 2026 TheMealDB <br>Proudly built in the UK <img src="./TheMealDB.com - API Guide_files/gb.png" alt="UK Flag Icon" title="UK Flag">
+            </div>
+            <div class="col-sm-6">
+                <center>
+                    Socials:
+                    <a href="https://www.facebook.com/TheDataDB/"><img src="./TheMealDB.com - API Guide_files/facebook_icon.png" loading="eager" alt="Facebook Icon" title="Facebook Social MediaLink"></a>
+                    <a href="https://twitter.com/TheAudioDB"><img src="./TheMealDB.com - API Guide_files/twitter_icon.png" loading="eager" alt="X Icon" title="X Social Media Link"></a>
+                    <a href="https://discord.com/invite/pFvgaXV"><img src="./TheMealDB.com - API Guide_files/discord_icon.png" loading="eager" alt="Discord Icon" title="Discord Social Media Link"></a><br><br>
+                    <a href="https://www.thecocktaildb.com/" target="_blank"><img src="./TheMealDB.com - API Guide_files/logo-tcdb.png" loading="eager" alt="TheCocktailDB logo" title="TheCocktailDB website Link"></a>
+                    <a href="http://www.theaudiodb.com/" target="_blank"><img src="./TheMealDB.com - API Guide_files/logo-tadb.png" loading="eager" alt="TheAudioDB logo" title="TheAudioDB website Link"></a>
+                    <a href="https://www.thesportsdb.com/" target="_blank"><img src="./TheMealDB.com - API Guide_files/logo-tsdb.png" loading="eager" alt="TheSportsDB logo" title="TheSportsDB website Link"></a>
+                </center>
+            </div>
+            <div class="col-sm-3">
+                <ul class="pull-right">
+                    <!-- <li><a href="/about.php">About</a></li> -->
+                    <!-- <li><a href="/faq.php">Faq</a></li> -->
+                    <li><a href="https://www.themealdb.com/terms_of_use.php">Terms</a></li>
+                    <li><a href="https://www.themealdb.com/privacy_policy.php">Privacy</a></li>
+                    <li><a href="https://www.themealdb.com/contact.php">Contact</a></li>
+                    <li><a href="https://www.themealdb.com/refunds.php">Refunds</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer><!--/#footer-->
+    <script src="./TheMealDB.com - API Guide_files/bootstrap.bundle.min.js"></script>
+<script type="module" src="./TheMealDB.com - API Guide_files/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;71aba6f2a0a5452cb38879a0173f1037&quot;,&quot;r&quot;:1,&quot;spa&quot;:2}" crossorigin="anonymous"></script>
+
+
+
+<div id="screenity-ui"><div class="screenity-shadow-dom"><div><div></div><div></div></div><style type="text/css">
+			#screenity-ui, #screenity-ui div {
+				background-color: unset;
+				padding: unset;
+				width: unset;
+				box-shadow: unset;
+				display: unset;
+				margin: unset;
+				border-radius: unset;
+			}
+			.screenity-outline {
+				position: absolute;
+				z-index: 99999999999;
+				border: 2px solid #3080F8;
+				outline-offset: -2px;
+				pointer-events: none;
+				border-radius: 5px!important;
+			}
+		.screenity-blur {
+			filter: blur(10px)!important;
+		}
+			.screenity-shadow-dom * {
+				transition: unset;
+			}
+			.screenity-shadow-dom .TooltipContent {
+  border-radius: 30px!important;
+	background-color: #29292F!important;
+  padding: 10px 15px!important;
+  font-size: 12px;
+	margin-bottom: 10px!important;
+	bottom: 100px;
+  line-height: 1;
+	font-family: 'Satoshi-Medium', sans-serif;
+	z-index: 99999999!important;
+  color: #FFF;
+  box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px!important;
+  user-select: none;
+	transition: opacity 0.3 ease-in-out;
+  will-change: transform, opacity;
+	animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.screenity-shadow-dom .hide-tooltip {
+	display: none!important;
+}
+
+.screenity-shadow-dom .tooltip-tall {
+	margin-bottom: 20px;
+}
+
+.screenity-shadow-dom .tooltip-small {
+	margin-bottom: 5px;
+}
+
+.screenity-shadow-dom .TooltipContent[data-state='delayed-open'][data-side='top'] {
+	animation-name: screenity-slideDownAndFade;
+}
+.screenity-shadow-dom .TooltipContent[data-state='delayed-open'][data-side='right'] {
+  animation-name: screenity-slideLeftAndFade;
+}
+.screenity-shadow-dom.TooltipContent[data-state='delayed-open'][data-side='bottom'] {
+  animation-name: screenity-slideUpAndFade;
+}
+.screenity-shadow-dom.TooltipContent[data-state='delayed-open'][data-side='left'] {
+  animation-name: screenity-slideRightAndFade;
+}
+
+@keyframes screenity-slideUpAndFade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes screenity-slideRightAndFade {
+  from { opacity: 0; transform: translateX(-2px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes screenity-slideDownAndFade {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes screenity-slideLeftAndFade {
+  from { opacity: 0; transform: translateX(2px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+#screenity-ui [data-radix-popper-content-wrapper] { z-index: 999999999999!important; }
+
+.screenity-shadow-dom .CanvasContainer {
+	position: fixed;
+	pointer-events: all!important;
+	top: 0px!important;
+	left: 0px!important;
+	z-index: 99999999999!important;
+}
+.screenity-shadow-dom .canvas {
+	position: fixed;
+	top: 0px!important;
+	left: 0px!important;
+	z-index: 99999999999!important;
+	background: transparent!important;
+}
+.screenity-shadow-dom .canvas-container {
+	top: 0px!important;
+	left: 0px!important;
+	z-index: 99999999999;
+	position: fixed!important;
+	background: transparent!important;
+}
+
+.ScreenityDropdownMenuContent {
+	z-index: 99999999999!important;
+  min-width: 200px;
+  background-color: white;
+  margin-top: 4px;
+  margin-right: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-radius: 15px;
+  font-family: 'Satoshi-Medium', sans-serif;
+  color: #29292F;
+  box-shadow: 0px 10px 38px -10px rgba(22, 23, 24, 0.35),
+    0px 10px 20px -15px rgba(22, 23, 24, 0.2);
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+.ScreenityDropdownMenuContent[data-side="top"] {
+  animation-name: screenity-slideDownAndFade;
+}
+.ScreenityDropdownMenuContent[data-side="right"] {
+  animation-name: screenity-slideLeftAndFade;
+}
+.ScreenityDropdownMenuContent[data-side="bottom"] {
+  animation-name: screenity-slideUpAndFade;
+}
+.ScreenityDropdownMenuContent[data-side="left"] {
+  animation-name: screenity-slideRightAndFade;
+}
+.ScreenityItemIndicator {
+  position: absolute;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  background: #3080F8;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ScreenityDropdownMenuItem,
+.ScreenityDropdownMenuRadioItem {
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 5px;
+  position: relative;
+  padding-left: 22px;
+  padding-right: 22px;
+  user-select: none;
+  outline: none;
+}
+.ScreenityDropdownMenuItem:hover {
+    background-color: #F6F7FB !important;
+    cursor: pointer;
+}
+.ScreenityDropdownMenuItem[data-disabled] {
+  color: #6E7684 !important;
+  cursor: not-allowed;
+  background-color: #F6F7FB !important;
+}
+
+</style></div></div><div><div style="display: none; position: fixed; top: 30px; width: auto; max-width: 100%; text-align: center; left: 50%; transform: translateX(-50%); z-index: 99999999;"><div style="display: inline-block; font-size: 14px; font-weight: bold; border: 1px solid rgb(240, 195, 109); background-color: rgb(249, 237, 190); padding: 0px 10px; border-radius: 2px; box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 4px;"></div></div></div></body></html>
