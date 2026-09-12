@@ -12,7 +12,6 @@ import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_palette.dart';
-import '../utils/recipe_meta.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/feedback_state.dart';
@@ -23,6 +22,7 @@ import '../widgets/recipe_card.dart';
 import '../widgets/responsive_grid.dart';
 import '../widgets/section_header.dart';
 import '../widgets/shimmer.dart';
+import 'all_recipes_screen.dart';
 import 'detail_screen.dart';
 import 'favorites_screen.dart';
 
@@ -67,14 +67,21 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Recipe> _trendingCache = [];
   List<Recipe> _baseRecipes = [];
 
+  List<Recipe> _allRecipes = [];
+  bool _allLoading = false;
+  bool _allError = false;
+  bool _allOffline = false;
+
   bool _loading = true;
   bool _error = false;
+  bool _offline = false;
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
     _loadTrending();
+    _loadAllRecipes();
   }
 
   @override
@@ -106,17 +113,53 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _loading = true;
       _error = false;
+      _offline = false;
     });
 
+    // 1) Cache : on évite de marteler /random.php à chaque lancement.
+    final cached = await _database.getTrendingCache();
+    if (cached != null &&
+        cached.recipes.isNotEmpty &&
+        DateTime.now().difference(cached.savedAt) <
+            DatabaseService.trendingCacheDuration) {
+      if (!mounted) return;
+      setState(() {
+        _trendingCache = cached.recipes;
+        if (_selectedCategory == null &&
+            _searchController.text.trim().isEmpty) {
+          _baseRecipes = cached.recipes;
+        }
+        _loading = false;
+      });
+      return;
+    }
+
+    // 2) Appel réseau.
     final List<Recipe> recipes;
     try {
       recipes = await _api.getRandomMeals(6);
     } on ApiException {
+      // Sans connexion : on retombe sur la liste en cache, même ancienne.
+      if (cached != null && cached.recipes.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _trendingCache = cached.recipes;
+          if (_selectedCategory == null &&
+              _searchController.text.trim().isEmpty) {
+            _baseRecipes = cached.recipes;
+          }
+          _loading = false;
+          _offline = true;
+        });
+        return;
+      }
       if (mounted) setState(() => _error = true);
       if (mounted) setState(() => _loading = false);
       return;
     }
 
+    if (!mounted) return;
+    await _database.saveTrendingCache(recipes);
     if (!mounted) return;
     setState(() {
       _trendingCache = recipes;
@@ -124,6 +167,63 @@ class _HomeScreenState extends State<HomeScreen> {
         _baseRecipes = recipes;
       }
       _loading = false;
+      _offline = false;
+    });
+  }
+
+  // « Toutes les recettes » : cache d'abord (24 h), sinon composition par
+  // catégorie via l'API. En cas d'échec réseau, on retombe sur le cache,
+  // même ancien, en signalant le mode hors-ligne.
+  Future<void> _loadAllRecipes() async {
+    setState(() {
+      _allLoading = true;
+      _allError = false;
+      _allOffline = false;
+    });
+
+    final cached = await _database.getAllRecipesCache();
+    if (cached != null &&
+        cached.recipes.isNotEmpty &&
+        DateTime.now().difference(cached.savedAt) <
+            DatabaseService.allRecipesCacheDuration) {
+      if (!mounted) return;
+      setState(() {
+        _allRecipes = cached.recipes;
+        _allLoading = false;
+      });
+      return;
+    }
+
+    final List<Recipe> recipes;
+    try {
+      final categories = await _api.getCategories();
+      recipes =
+          categories.isEmpty ? [] : await _api.getRecipesByCategories(categories);
+    } on ApiException {
+      if (cached != null && cached.recipes.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _allRecipes = cached.recipes;
+          _allLoading = false;
+          _allOffline = true;
+        });
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _allError = true;
+        _allLoading = false;
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    await _database.saveAllRecipesCache(recipes);
+    if (!mounted) return;
+    setState(() {
+      _allRecipes = recipes;
+      _allLoading = false;
+      _allOffline = false;
     });
   }
 
@@ -199,19 +299,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCategory(category.apiName);
   }
 
-  // Recherche en direct : filtre local du contenu déjà chargé.
-  List<Recipe> get _visibleRecipes {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return _baseRecipes;
+  // Recherche en direct : le contenu affiché est celui chargé depuis l'API.
+  List<Recipe> get _visibleRecipes => _baseRecipes;
 
-    return _baseRecipes.where((recipe) {
-      final description = RecipeMeta.from(recipe).description.toLowerCase();
-      return recipe.name.toLowerCase().contains(query) ||
-          description.contains(query);
-    }).toList();
-  }
-
-  void _syncViewState() => setState(() {});
+  // La section « Toutes les recettes » est un bloc de navigation dédié :
+  // on ne l'affiche que sur l'accueil, hors recherche/filtre, pour ne pas
+  // mélanger deux listes différentes au même écran.
+  bool get _showAllRecipesSection =>
+      _selectedCategory == null && _searchController.text.trim().isEmpty;
 
   // ---------------------------------------------------------------------------
   // Favoris
@@ -258,6 +353,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Écran pleine page listant toutes les recettes chargées.
+  void _openAllRecipes() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AllRecipesScreen(
+          recipes: _allRecipes,
+          loading: _allLoading,
+          error: _allError,
+          offline: _allOffline,
+          favorites: _favorites,
+          onRetry: _loadAllRecipes,
+          onOpenRecipe: _openDetail,
+          onToggleFavorite: _toggleFavorite,
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
@@ -268,7 +381,12 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppPalette.background,
       body: SafeArea(
         bottom: false,
-        child: _navIndex == 2 ? _buildFavoritesTab() : _buildHomeBody(),
+        child: switch (_navIndex) {
+          1 => _buildComingSoon('Catégories'),
+          2 => _buildFavoritesTab(),
+          3 => _buildComingSoon('Profil'),
+          _ => _buildHomeBody(),
+        },
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _navIndex,
@@ -284,6 +402,35 @@ class _HomeScreenState extends State<HomeScreen> {
       favorites: _favorites,
       onRemoved: (id) => setState(() => _favorites.remove(id)),
       onOpenRecipe: _openDetail,
+    );
+  }
+
+  // Section encore en préparation : message clair + retour à l'accueil.
+  Widget _buildComingSoon(String label) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const HomeHeader(),
+              const SizedBox(height: 20),
+              const SectionHeader(title: 'Bientôt disponible'),
+              const SizedBox(height: 14),
+              EmptyState(
+                icon: Icons.hourglass_bottom,
+                title: '$label arrive très vite !',
+                message: 'Cette section est en préparation.\n'
+                    'En attendant, explorez les recettes tendance.',
+                actionLabel: 'Retour à l\'accueil',
+                onAction: () => setState(() => _navIndex = 0),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -311,22 +458,50 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (_trendingCache.isEmpty) _loadTrending();
                   }
                 },
-                onChanged: (_) => _syncViewState(),
-              ),
+              ),  // fin HomeSearchBar
+              if (_offline) ...[
+                const SizedBox(height: 14),
+                _buildOfflineNotice(),
+              ],
               const SizedBox(height: 24),
-              const SectionHeader(
-                title: 'Catégories populaires',
-                showSeeAll: false,
-              ),
+              const SectionHeader(title: 'Catégories populaires'),
               const SizedBox(height: 14),
               _buildCategories(),
               const SizedBox(height: 24),
               _buildTrendingHeader(),
               const SizedBox(height: 14),
               _buildTrendingContent(),
+              if (_showAllRecipesSection) ...[
+                const SizedBox(height: 24),
+                _buildAllRecipesSection(),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Avis discret quand la liste affichée provient du cache hors-ligne.
+  Widget _buildOfflineNotice() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppPalette.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppPalette.thinBorder),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.cloud_off, size: 16, color: AppPalette.textMuted),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Connexion indisponible — recettes chargées précédemment.',
+              style: TextStyle(fontSize: 12.5, color: AppPalette.textMuted),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -355,7 +530,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTrendingHeader() {
     final count = _visibleRecipes.length;
-    return SectionHeader(title: 'Recettes tendance', badge: '$count au menu');
+    return SectionHeader(
+      title: 'Recettes tendance',
+      badge: '$count au menu',
+    );
   }
 
   Widget _buildTrendingContent() {
@@ -404,10 +582,60 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Section « Toutes les recettes » : aperçu des premières recettes + accès
+  // à la liste complète en pleine page.
+  Widget _buildAllRecipesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'Toutes les recettes',
+          badge: _allRecipes.isEmpty ? null : '${_allRecipes.length} recettes',
+          actionLabel: 'Voir tout',
+          onAction: _openAllRecipes,
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 600 ? 3 : 2;
+
+            if (_allLoading) {
+              return ResponsiveGrid(
+                columns: columns,
+                children: List.generate(columns * 2, (_) => const SkeletonCard()),
+              );
+            }
+            if (_allError) {
+              return ErrorState(onRetry: _loadAllRecipes);
+            }
+            if (_allRecipes.isEmpty) return const SizedBox.shrink();
+
+            final preview = _allRecipes.take(6).toList();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_allOffline) ...[
+                  _buildOfflineNotice(),
+                  const SizedBox(height: 16),
+                ],
+                ResponsiveGrid(
+                  columns: columns,
+                  children:
+                      preview.map((r) => _buildRecipeCard(r)).toList(),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildEmptyState() {
     return EmptyState(
       title: 'Aucune recette trouvée',
-      message: 'Essayez un autre mot-clé ou une autre catégorie.',
+      message: 'Essayez un autre mot-clé ou explorez une autre catégorie '
+          'pour trouver votre prochaine recette préférée.',
       actionLabel: 'Réinitialiser les filtres',
       onAction: _resetFilters,
     );

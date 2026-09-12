@@ -61,7 +61,7 @@ class PortionAdjuster extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ajusteur de portions dynamique',
+                      'Nombre de portions',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -70,7 +70,7 @@ class PortionAdjuster extends StatelessWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Règle de trois en temps réel',
+                      'Les quantités s\'ajustent automatiquement',
                       style: TextStyle(
                         fontSize: 12.5,
                         color: AppPalette.textMuted,
@@ -89,7 +89,7 @@ class PortionAdjuster extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Affichage : $portions convives',
+              'Recette pour $portions personnes',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -124,7 +124,7 @@ class PortionAdjuster extends StatelessWidget {
                       ),
                     ),
                     const Text(
-                      'portions ajustées',
+                      'personnes',
                       style: TextStyle(fontSize: 12, color: AppPalette.textMuted),
                     ),
                   ],
@@ -160,8 +160,8 @@ class PortionAdjuster extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Les quantités ci-dessous se recalculent instantanément '
-                    'sur la base originale de $basePortions personnes.',
+                    'Les quantités ci-dessous se recalculent automatiquement'
+                  ' selon le nombre de personnes choisi.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppPalette.textMuted,

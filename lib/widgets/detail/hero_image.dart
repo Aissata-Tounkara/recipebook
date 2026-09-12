@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_palette.dart';
+import '../../utils/meal_image.dart';
 
 class HeroImage extends StatelessWidget {
   const HeroImage({super.key, required this.imageUrl, required this.time, required this.emoji});
@@ -22,7 +23,7 @@ class HeroImage extends StatelessWidget {
             child: imageUrl.isEmpty
                 ? _imageFallback()
                 : Image.network(
-                    imageUrl,
+                    mealImageVariant(imageUrl, size: 'medium'),
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, progress) =>
                         progress == null ? child : _imageFallback(),

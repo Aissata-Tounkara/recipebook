@@ -44,7 +44,7 @@ void main() {
     return DatabaseService(
       directory: tempDir.path,
       client: MockClient((request) async {
-        if (request.url.path.endsWith('.jpg')) {
+        if (request.url.path.contains('.jpg')) {
           return http.Response.bytes([1, 2, 3, 4], 200);
         }
         return http.Response('Not Found', 404);
@@ -214,6 +214,48 @@ void main() {
 
         await db.addFavorite(_mockRecipe('52771'));
         expect(await db.getFavoriteThumbFile('52802'), isNull);
+      });
+    });
+
+    group('Cache des recettes tendance', () {
+      test('14. Enregistre puis relit la liste avec sa date', () async {
+        final db = serviceWithoutImage();
+
+        await db.saveTrendingCache([
+          _mockRecipe('52771'),
+          _mockRecipe('52802', name: 'Fish pie'),
+        ]);
+
+        final cached = await db.getTrendingCache();
+        expect(cached, isNotNull);
+        expect(cached!.recipes, hasLength(2));
+        expect(cached.recipes.map((recipe) => recipe.id).toSet(),
+            {'52771', '52802'});
+        expect(DateTime.now().difference(cached.savedAt).inSeconds,
+            lessThan(60));
+      });
+
+      test('15. Un autre service relit le même cache', () async {
+        final writer = serviceWithoutImage();
+        await writer.saveTrendingCache([_mockRecipe('52771')]);
+
+        final reader = serviceWithoutImage();
+        final cached = await reader.getTrendingCache();
+
+        expect(cached, isNotNull);
+        expect(cached!.recipes.first.id, '52771');
+        expect(cached.recipes.first.name, 'Spicy Arrabiata Penne');
+      });
+
+      test('16. Renvoie null quand aucun cache n\'existe', () async {
+        final db = serviceWithoutImage();
+        expect(await db.getTrendingCache(), isNull);
+      });
+
+      test('17. N\'enregistre pas une liste vide', () async {
+        final db = serviceWithoutImage();
+        await db.saveTrendingCache([]);
+        expect(await db.getTrendingCache(), isNull);
       });
     });
   });

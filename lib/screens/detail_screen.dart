@@ -19,7 +19,6 @@ import '../widgets/detail/ingredient_list.dart';
 import '../widgets/detail/portion_adjuster.dart';
 import '../widgets/detail/preparation_list.dart';
 import '../widgets/detail/rating_row.dart';
-import '../widgets/detail/status_banner.dart';
 import '../widgets/shimmer.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -106,6 +105,35 @@ class _DetailScreenState extends State<DetailScreen> {
     final next = !_favorite;
     setState(() => _favorite = next);
 
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          backgroundColor: next ? AppPalette.greenText : AppPalette.textMuted,
+          content: Row(
+            children: [
+              Icon(
+                next ? Icons.favorite : Icons.favorite_border,
+                size: 18,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  next ? 'Ajoutée à vos favoris' : 'Retirée de vos favoris',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
     final database = widget.database;
     if (database != null && _recipe.id.isNotEmpty) {
       try {
@@ -132,7 +160,6 @@ class _DetailScreenState extends State<DetailScreen> {
         child: Column(
           children: [
             _buildAppBar(),
-            const StatusBanner(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -262,7 +289,7 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
           const SizedBox(width: 4),
           const Text(
-            'Recipes',
+            'Recettes',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -270,15 +297,6 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
           ),
           const Spacer(),
-          _circleIconButton(Icons.share_outlined),
-          const SizedBox(width: 4),
-          _circleIconButton(
-            _favorite ? Icons.favorite : Icons.favorite_border,
-            color: _favorite ? AppPalette.heart : AppPalette.textDark,
-            onTap: _toggleFavorite,
-          ),
-          const SizedBox(width: 4),
-          _circleIconButton(Icons.more_vert),
         ],
       ),
     );

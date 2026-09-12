@@ -78,7 +78,8 @@ class PreparationList extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Instructions non disponibles.',
+                'Les étapes de préparation ne sont pas disponibles\n'
+                  'pour cette recette.',
                 style: TextStyle(fontSize: 14, color: AppPalette.textMuted),
               ),
             )

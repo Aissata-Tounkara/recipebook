@@ -9,12 +9,10 @@ class HomeSearchBar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onSubmitted,
-    required this.onChanged,
   });
 
   final TextEditingController controller;
   final VoidCallback onSubmitted;
-  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +37,6 @@ class HomeSearchBar extends StatelessWidget {
             child: TextField(
               controller: controller,
               onSubmitted: (_) => onSubmitted(),
-              onChanged: onChanged,
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 isCollapsed: true,

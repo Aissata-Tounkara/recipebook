@@ -9,12 +9,14 @@ class EmptyState extends StatelessWidget {
     super.key,
     required this.title,
     required this.message,
+    this.icon = Icons.search_off,
     this.actionLabel,
     this.onAction,
   });
 
   final String title;
   final String message;
+  final IconData icon;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -29,7 +31,7 @@ class EmptyState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.search_off, size: 48, color: AppPalette.textMuted),
+          Icon(icon, size: 48, color: AppPalette.textMuted),
           const SizedBox(height: 14),
           Text(
             title,
@@ -84,7 +86,7 @@ class ErrorState extends StatelessWidget {
           const Icon(Icons.cloud_off, size: 48, color: AppPalette.heart),
           const SizedBox(height: 14),
           const Text(
-            'Oups, une erreur est survenue',
+            "Oups ! Nous n'avons pas pu nous connecter",
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -93,7 +95,8 @@ class ErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Impossible de contacter le serveur.\nVérifiez votre connexion et réessayez.',
+            "Vérifiez votre connexion internet puis réessayez.\n"
+            'Vos recettes favorites restent disponibles hors-ligne.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: AppPalette.textMuted),
           ),

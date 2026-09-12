@@ -136,5 +136,42 @@ class ApiService {
         .toList();
   }
 
+  // « Toutes les recettes » : composition par catégorie. L'API free ne
+  // fournit pas de liste exhaustive, on regroupe donc toutes les catégories,
+  // en petits lots parallèles pour ne pas saturer le serveur, avec tolérance
+  // aux échecs partiels (une catégorie en erreur n'annule pas le reste).
+  Future<List<Recipe>> getRecipesByCategories(List<String> categories) async {
+    const batchSize = 4;
+    final merged = <Recipe>[];
+    final seen = <String>{};
+
+    for (var start = 0; start < categories.length; start += batchSize) {
+      final batch = categories.skip(start).take(batchSize).toList();
+      final results = await Future.wait(
+        [
+          for (final category in batch) _getRecipesByCategoryQuiet(category),
+        ],
+      );
+
+      for (final recipes in results) {
+        for (final recipe in recipes) {
+          if (recipe.id.isNotEmpty && seen.add(recipe.id)) {
+            merged.add(recipe);
+          }
+        }
+      }
+    }
+
+    return merged;
+  }
+
+  Future<List<Recipe>> _getRecipesByCategoryQuiet(String category) async {
+    try {
+      return await getRecipesByCategory(category);
+    } on ApiException {
+      return [];
+    }
+  }
+
   void dispose() => _client.close();
 }

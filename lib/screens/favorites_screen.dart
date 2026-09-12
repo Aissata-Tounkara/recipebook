@@ -135,10 +135,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
         if (_recipes.isEmpty) {
           return const EmptyState(
-            title: 'Aucun favori pour le moment',
+            icon: Icons.favorite_border,
+            title: 'Votre liste de favoris est vide',
             message:
-                'Appuyez sur le cœur d\'une recette pour la sauvegarder '
-                'et la retrouver ici, même hors-ligne.',
+                "Touchez le cœur d'une recette pour la garder précieusement\n"
+                'et la retrouver ici, même sans connexion.',
           );
         }
 

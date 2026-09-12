@@ -42,62 +42,7 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        const _ModeChip(),
-        const SizedBox(width: 8),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppPalette.card,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.tune, color: AppPalette.textDark, size: 20),
-        ),
       ],
-    );
-  }
-}
-
-class _ModeChip extends StatelessWidget {
-  const _ModeChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppPalette.greenBg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: AppPalette.greenText,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Text(
-            'Mode local',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppPalette.greenText,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

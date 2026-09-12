@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../models/recipe.dart';
 import '../theme/app_palette.dart';
+import '../utils/meal_image.dart';
 import '../utils/recipe_meta.dart';
 import 'shimmer.dart';
 
@@ -253,7 +254,7 @@ class _RecipeImage extends StatelessWidget {
     if (imageUrl.isEmpty) return _fallback();
 
     return Image.network(
-      imageUrl,
+      mealImageVariant(imageUrl, size: 'small'),
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;

@@ -1,12 +1,14 @@
-// Liste d'ingrédients cochables avec quantités recalculées par portions.
+// Liste d'ingrédients en lecture seule, avec miniature et quantités
+// recalculées par portions.
 
 import 'package:flutter/material.dart';
 
 import '../../models/recipe.dart';
 import '../../theme/app_palette.dart';
+import '../../utils/meal_image.dart';
 import '../../utils/portion_calculator.dart';
 
-class IngredientList extends StatefulWidget {
+class IngredientList extends StatelessWidget {
   const IngredientList({
     super.key,
     required this.ingredients,
@@ -17,13 +19,6 @@ class IngredientList extends StatefulWidget {
   final List<Ingredient> ingredients;
   final int basePortions;
   final int portions;
-
-  @override
-  State<IngredientList> createState() => _IngredientListState();
-}
-
-class _IngredientListState extends State<IngredientList> {
-  final Set<int> _checked = {};
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +60,7 @@ class _IngredientListState extends State<IngredientList> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${widget.ingredients.length} éléments',
+                  '${ingredients.length} éléments',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -75,106 +70,110 @@ class _IngredientListState extends State<IngredientList> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Spacer(),
-              const Flexible(
-                child: Text(
-                  'Cochez au fur et à mesure',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 11.5, color: AppPalette.textMuted),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 6),
-          if (widget.ingredients.isEmpty)
+          if (ingredients.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Aucun ingrédient détaillé.',
+                'La liste des ingrédients n\'est pas disponible\n'
+                'pour cette recette.',
                 style: TextStyle(fontSize: 14, color: AppPalette.textMuted),
               ),
             )
           else
-            for (var i = 0; i < widget.ingredients.length; i++)
-              _ingredientRow(i, widget.ingredients[i]),
+            for (var i = 0; i < ingredients.length; i++)
+              _ingredientRow(ingredients[i]),
         ],
       ),
     );
   }
 
-  Widget _ingredientRow(int index, Ingredient ingredient) {
-    final checked = _checked.contains(index);
-
+  Widget _ingredientRow(Ingredient ingredient) {
     // Quantité recalculée pour le nombre de portions courant.
     final scaled = PortionCalculator.scaleMeasure(
       ingredient.measure,
-      basePortions: widget.basePortions,
-      targetPortions: widget.portions,
+      basePortions: basePortions,
+      targetPortions: portions,
     );
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (checked) {
-            _checked.remove(index);
-          } else {
-            _checked.add(index);
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: checked ? AppPalette.greenText : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: checked ? AppPalette.greenText : const Color(0xFFCFC4B8),
-                  width: 1.5,
-                ),
-              ),
-              child: checked
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                  : null,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: _IngredientImage(name: ingredient.name),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                ingredient.name,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: checked ? AppPalette.textMuted : AppPalette.textDark,
-                  decoration: checked
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              ingredient.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppPalette.textDark,
               ),
             ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppPalette.peachBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                scaled.isEmpty ? '—' : scaled,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppPalette.peachText,
-                ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppPalette.peachBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              scaled.isEmpty ? '—' : scaled,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppPalette.peachText,
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Miniature d'un ingrédient TheMealDB, avec repli si l'image manque
+/// (hors-ligne, ingrédient inconnu du service…).
+class _IngredientImage extends StatelessWidget {
+  const _IngredientImage({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = ingredientImageUrl(name);
+    if (url.isEmpty) return _placeholder(name);
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, progress) => _placeholder(name),
+      errorBuilder: (context, error, stack) => _placeholder(name),
+    );
+  }
+
+  Widget _placeholder(String ingredient) {
+    return Container(
+      color: AppPalette.peachBg,
+      alignment: Alignment.center,
+      child: Text(
+        ingredient.isEmpty ? '?' : ingredient.characters.first.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: AppPalette.peachText,
         ),
       ),
     );

@@ -9,15 +9,20 @@ class SectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.badge,
-    this.showSeeAll = true,
+    this.actionLabel,
+    this.onAction,
   });
 
   final String title;
   final String? badge;
-  final bool showSeeAll;
+
+  /// Libellé d'une action en bout de ligne (« Voir tout »…), si fournie.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
+    final showAction = actionLabel != null && onAction != null;
     return Row(
       children: [
         Flexible(
@@ -51,20 +56,32 @@ class SectionHeader extends StatelessWidget {
           ),
         ],
         const Spacer(),
-        if (showSeeAll)
-          Row(
-            children: const [
-              Text(
-                'Voir tout',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppPalette.brown,
-                ),
+        if (showAction)
+          InkWell(
+            onTap: onAction,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    actionLabel!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppPalette.peachText,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppPalette.peachText,
+                  ),
+                ],
               ),
-              SizedBox(width: 2),
-              Icon(Icons.arrow_forward, size: 16, color: AppPalette.brown),
-            ],
+            ),
           ),
       ],
     );

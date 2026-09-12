@@ -61,7 +61,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Chicken Handi'), findsNothing);
-    expect(find.text('Aucun favori pour le moment'), findsOneWidget);
+    expect(find.text('Votre liste de favoris est vide'), findsOneWidget);
   });
 
   testWidgets('Affiche l\'état vide quand il n\'y a aucun favori', (
@@ -72,6 +72,6 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Aucun favori pour le moment'), findsOneWidget);
+    expect(find.text('Votre liste de favoris est vide'), findsOneWidget);
   });
 }

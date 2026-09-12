@@ -21,7 +21,7 @@ class InfoGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.restaurant, 'Base recette', '$basePortions portions'),
+      (Icons.restaurant, 'Portions', '$basePortions personnes'),
       (Icons.schedule, 'Cuisson', cookTime),
       (Icons.signal_cellular_alt, 'Niveau', difficulty),
       (Icons.local_fire_department, 'Énergie', energy),
