@@ -39,6 +39,9 @@ dependencies:
   http: ^1.2.0
   path_provider: ^2.1.6
   hive: ^2.2.3
+  # Nécessaire pour que Hive fonctionne sur Flutter Web (stockage IndexedDB) ;
+  # path_provider ne supporte pas le web, d'où l'échec silencieux sans ce package.
+  hive_flutter: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -14,7 +14,6 @@ class BottomNavBar extends StatelessWidget {
     (Icons.home, 'Accueil'),
     (Icons.grid_view, 'Catégories'),
     (Icons.favorite_border, 'Favoris'),
-    (Icons.person_outline, 'Profil'),
   ];
 
   @override
