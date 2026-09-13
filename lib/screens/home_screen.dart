@@ -23,6 +23,7 @@ import '../widgets/responsive_grid.dart';
 import '../widgets/section_header.dart';
 import '../widgets/shimmer.dart';
 import 'all_recipes_screen.dart';
+import 'categories_screen.dart';
 import 'detail_screen.dart';
 import 'favorites_screen.dart';
 
@@ -382,9 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         bottom: false,
         child: switch (_navIndex) {
-          1 => _buildComingSoon('Catégories'),
+          1 => _buildCategoriesTab(),
           2 => _buildFavoritesTab(),
-          3 => _buildComingSoon('Profil'),
           _ => _buildHomeBody(),
         },
       ),
@@ -405,32 +405,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Section encore en préparation : message clair + retour à l'accueil.
-  Widget _buildComingSoon(String label) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const HomeHeader(),
-              const SizedBox(height: 20),
-              const SectionHeader(title: 'Bientôt disponible'),
-              const SizedBox(height: 14),
-              EmptyState(
-                icon: Icons.hourglass_bottom,
-                title: '$label arrive très vite !',
-                message: 'Cette section est en préparation.\n'
-                    'En attendant, explorez les recettes tendance.',
-                actionLabel: 'Retour à l\'accueil',
-                onAction: () => setState(() => _navIndex = 0),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _buildCategoriesTab() {
+    return CategoriesScreen(
+      api: _api,
+      favorites: _favorites,
+      onOpenRecipe: _openDetail,
+      onToggleFavorite: _toggleFavorite,
     );
   }
 

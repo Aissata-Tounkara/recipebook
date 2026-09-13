@@ -6,7 +6,8 @@
 
 import 'dart:io';
 
-import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -81,6 +82,7 @@ class DatabaseService {
   }
 
   Future<File?> getFavoriteThumbFile(String id) async {
+    if (kIsWeb) return null; // Pas de système de fichiers sur le web.
     try {
       final file = await _thumbnailFile(id);
       if (await file.exists()) return file;
@@ -218,30 +220,33 @@ class DatabaseService {
     if (Hive.isBoxOpen(_boxName)) {
       return Hive.box(_boxName);
     }
-
-    final directory =
-        _directory ?? (await getApplicationDocumentsDirectory()).path;
-    return Hive.openBox<Map>(_boxName, path: directory);
+    return Hive.openBox<Map>(_boxName, path: await _resolveDirectory());
   }
 
   Future<Box<Map>> _openTrendingBoxOnce() async {
     if (Hive.isBoxOpen(_trendingBoxName)) {
       return Hive.box(_trendingBoxName);
     }
-
-    final directory =
-        _directory ?? (await getApplicationDocumentsDirectory()).path;
-    return Hive.openBox<Map>(_trendingBoxName, path: directory);
+    return Hive.openBox<Map>(_trendingBoxName, path: await _resolveDirectory());
   }
 
   Future<Box<Map>> _openAllRecipesBoxOnce() async {
     if (Hive.isBoxOpen(_allRecipesBoxName)) {
       return Hive.box(_allRecipesBoxName);
     }
+    return Hive.openBox<Map>(
+      _allRecipesBoxName,
+      path: await _resolveDirectory(),
+    );
+  }
 
-    final directory =
-        _directory ?? (await getApplicationDocumentsDirectory()).path;
-    return Hive.openBox<Map>(_allRecipesBoxName, path: directory);
+  // Dossier de stockage des box Hive. `_directory` (tests) est prioritaire ;
+  // sur le web, path_provider n'est pas supporté et Hive.initFlutter() (voir
+  // main.dart) prend en charge le stockage IndexedDB sans chemin explicite.
+  Future<String?> _resolveDirectory() async {
+    if (_directory != null) return _directory;
+    if (kIsWeb) return null;
+    return (await getApplicationDocumentsDirectory()).path;
   }
 
   Future<File> _thumbnailFile(String id) async {
@@ -251,6 +256,7 @@ class DatabaseService {
   }
 
   Future<void> _cacheThumbnail(Recipe recette) async {
+    if (kIsWeb) return; // Pas de système de fichiers sur le web.
     final thumbUrl = recette.thumbnail.trim();
     if (thumbUrl.isEmpty) return;
 
@@ -268,6 +274,7 @@ class DatabaseService {
   }
 
   Future<void> _deleteThumbnail(String id) async {
+    if (kIsWeb) return; // Pas de système de fichiers sur le web.
     try {
       final file = await _thumbnailFile(id);
       if (await file.exists()) await file.delete();
