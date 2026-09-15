@@ -2,153 +2,189 @@ import 'package:flutter/material.dart';
 
 import '../models/recipe.dart';
 import '../services/api_service.dart';
-import '../utils/portion_calculator.dart';
+import '../services/database_service.dart';
+import '../theme/app_palette.dart';
+import '../utils/recipe_meta.dart';
+import '../widgets/detail/chef_tip_card.dart';
+import '../widgets/detail/detail_bottom_bar.dart';
+import '../widgets/detail/hero_image.dart';
+import '../widgets/detail/info_grid.dart';
+import '../widgets/detail/ingredient_list.dart';
+import '../widgets/detail/portion_adjuster.dart';
+import '../widgets/detail/preparation_list.dart';
+import '../widgets/detail/rating_row.dart';
 
 // ============================================================================
-// Écran qui affiche les détails d'une recette sélectionnée
+// Écran de détail d'une recette
 // ============================================================================
 class DetailScreen extends StatefulWidget {
-  // Identifiant de la recette transmis depuis la liste
-  final String recipeId;
+  final Recipe recipe;
+  final bool initiallyFavorite;
+  final ValueChanged<bool>? onFavoriteChanged;
+  final ApiService? api;
+  final DatabaseService? database;
 
-  const DetailScreen({super.key, required this.recipeId});
+  const DetailScreen({
+    super.key,
+    required this.recipe,
+    this.initiallyFavorite = false,
+    this.onFavoriteChanged,
+    this.api,
+    this.database,
+  });
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  // Service pour appeler l'API
-  final ApiService _api = ApiService();
-
-  // Variables d'état
-  Recipe? _recipe;        // Données de la recette reçues de l'API
-  bool _isLoading = true; // true = chargement en cours, false = terminé
-  int _portions = 4;      // Nombre de portions choisi par l'utilisateur
+  // Données locales
+  late Recipe _recipe = widget.recipe;
+  late bool _isFavorite = widget.initiallyFavorite;
+  late int _portions = widget.recipe.basePortions;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Charge la recette dès l'ouverture de l'écran
-    _loadRecipe();
+    // Si la recette n'a pas encore ses détails, on les charge depuis l'API
+    if (_recipe.ingredients.isEmpty && widget.api != null) {
+      _loadDetails();
+    }
   }
 
-  // Fonction asynchrone qui interroge l'API
-  Future<void> _loadRecipe() async {
-    final data = await _api.getRecipeById(widget.recipeId);
-
-    // Sécurité : vérifie que l'écran est toujours affiché
+  // Charge les détails complets de la recette via l'API
+  Future<void> _loadDetails() async {
+    setState(() => _isLoading = true);
+    final full = await widget.api!.getRecipeById(_recipe.id);
     if (!mounted) return;
-
-    // Met à jour l'état avec les données reçues
-    setState(() {
-      _recipe = data;
-      _isLoading = false;
-      if (data != null) {
-        _portions = data.basePortions; // Initialise avec les portions de base
-      }
-    });
+    if (full != null) {
+      setState(() {
+        _recipe = full;
+        _portions = full.basePortions;
+      });
+    }
+    setState(() => _isLoading = false);
   }
 
-  @override
-  void dispose() {
-    _api.dispose(); // Libère les ressources du service API
-    super.dispose();
+  // Gestion du bouton Favori (Ajouter / Retirer)
+  Future<void> _toggleFavorite() async {
+    final next = !_isFavorite;
+    setState(() => _isFavorite = next);
+
+    // Message de confirmation en bas d'écran (Toast)
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(next ? 'Ajoutée à vos favoris' : 'Retirée de vos favoris'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+    // Sauvegarde dans la base de données locale
+    if (widget.database != null && _recipe.id.isNotEmpty) {
+      try {
+        if (next) {
+          await widget.database!.addFavorite(_recipe);
+        } else {
+          await widget.database!.removeFavorite(_recipe.id);
+        }
+      } catch (_) {}
+    }
+
+    widget.onFavoriteChanged?.call(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Si les données sont en cours de chargement -> affiche un spinner
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Détail')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // 2. Si la recette n'a pas pu être chargée -> affiche un bouton pour réessayer
-    if (_recipe == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Détail')),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: _loadRecipe,
-            child: const Text('Réessayer'),
-          ),
-        ),
-      );
-    }
-
-    // 3. La recette est chargée avec succès
-    final recipe = _recipe!;
+    final meta = RecipeMeta.from(_recipe);
 
     return Scaffold(
-      appBar: AppBar(title: Text(recipe.name)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Photo de la recette
-          Image.network(recipe.thumbnail, height: 200, fit: BoxFit.cover),
-          const SizedBox(height: 10),
+      backgroundColor: AppPalette.background,
+      appBar: AppBar(
+        title: const Text('Recettes'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Note et Catégorie
+                  RatingRow(
+                    rating: meta.rating,
+                    reviews: meta.reviews,
+                    category: _recipe.category,
+                  ),
+                  const SizedBox(height: 12),
 
-          // Nom de la recette
-          Text(
-            recipe.name,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+                  // 2. Image principale
+                  HeroImage(
+                    imageUrl: _recipe.thumbnail,
+                    time: meta.time,
+                    emoji: meta.emoji,
+                  ),
+                  const SizedBox(height: 16),
 
-          // Catégorie (ex: Dessert, Vegetarian...)
-          if (recipe.category.isNotEmpty)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Chip(label: Text(recipe.category)),
+                  // 3. Titre de la recette
+                  Text(
+                    _recipe.name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppPalette.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 4. Grille d'informations (temps, difficulté, calories)
+                  InfoGrid(
+                    basePortions: _recipe.basePortions,
+                    cookTime: meta.time,
+                    difficulty: meta.difficulty,
+                    energy: meta.kcal,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 5. Astuce du chef
+                  ChefTipCard(tip: meta.chefTip),
+                  const SizedBox(height: 16),
+
+                  // 6. Sélecteur de portions
+                  PortionAdjuster(
+                    portions: _portions,
+                    basePortions: _recipe.basePortions,
+                    onChanged: (val) => setState(() => _portions = val),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 7. Liste des ingrédients avec recalcul dynamique
+                  IngredientList(
+                    ingredients: _recipe.ingredients,
+                    basePortions: _recipe.basePortions,
+                    portions: _portions,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 8. Instructions de préparation
+                  PreparationList(
+                    steps: _recipe.instructions
+                        .split('\n')
+                        .map((s) => s.trim())
+                        .where((s) => s.isNotEmpty)
+                        .toList(),
+                  ),
+                ],
+              ),
             ),
-          const SizedBox(height: 10),
-
-          // Sélecteur de portions (+ et -)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Portions : ', style: TextStyle(fontSize: 16)),
-              // Bouton (-) : désactivé si portions == 1
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: _portions > 1 ? () => setState(() => _portions--) : null,
-              ),
-              // Affichage du nombre de portions actuel
-              Text('$_portions', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              // Bouton (+) : augmente les portions
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => setState(() => _portions++),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Section Ingrédients
-          const Text('Ingrédients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const Divider(),
-          // On parcourt chaque ingrédient et on adapte sa quantité selon les portions
-          ...recipe.ingredients.map((ing) {
-            final q = PortionCalculator.scaleMeasure(
-              ing.measure,
-              basePortions: recipe.basePortions,
-              targetPortions: _portions,
-            );
-            final text = q.isEmpty ? ing.name : '$q ${ing.name}';
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text('• $text'),
-            );
-          }),
-          const SizedBox(height: 15),
-
-          // Section Instructions de préparation
-          const Text('Instructions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const Divider(),
-          Text(recipe.instructions, style: const TextStyle(height: 1.4)),
-        ],
+      // 9. Bouton favori en bas
+      bottomNavigationBar: DetailBottomBar(
+        isFavorite: _isFavorite,
+        onFavoriteToggle: _toggleFavorite,
       ),
     );
   }
