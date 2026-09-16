@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
+import '../utils/responsive.dart';
 import '../widgets/feedback_state.dart';
 import '../widgets/home_header.dart';
 import '../widgets/recipe_card.dart';
@@ -102,12 +103,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: BoxConstraints(
+            maxWidth: contentMaxWidth(MediaQuery.sizeOf(context).width),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HomeHeader(),
-              const SizedBox(height: 20),
+              // Grand écran : la marque est portée par le rail latéral.
+              if (MediaQuery.sizeOf(context).width < Breakpoints.navRail) ...[
+                const HomeHeader(),
+                const SizedBox(height: 20),
+              ],
               SectionHeader(
                 title: 'Mes favoris',
                 badge: _loading ? null : '${_recipes.length} recettes',
@@ -124,7 +130,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget _buildContent() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 600 ? 3 : 2;
+        final columns = gridColumnsFor(constraints.maxWidth);
 
         if (_loading) {
           return ResponsiveGrid(

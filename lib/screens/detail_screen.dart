@@ -2,7 +2,7 @@
 //
 // Reçoit une recette (pleine ou partielle). Si le contenu détaillé manque
 // (cas d'une carte issue d'une catégorie), il est rechargé par id depuis
-// l'API TheMealDB. Layout et design inchangés.
+// l'API TheMealDB. Sur grand écran, le contenu passe en deux colonnes.
 
 import 'package:flutter/material.dart';
 
@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_palette.dart';
 import '../utils/recipe_meta.dart';
+import '../utils/responsive.dart';
 import '../widgets/detail/chef_tip_card.dart';
 import '../widgets/detail/detail_bottom_bar.dart';
 import '../widgets/detail/hero_image.dart';
@@ -162,10 +163,14 @@ class _DetailScreenState extends State<DetailScreen> {
             _buildAppBar(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: EdgeInsets.fromLTRB(_edge, 8, _edge, 24),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
+                    constraints: BoxConstraints(
+                      maxWidth: _isWide
+                          ? Breakpoints.contentWide
+                          : _compactMaxWidth,
+                    ),
                     child: _loading ? _buildLoadingBody() : _buildBody(),
                   ),
                 ),
@@ -181,7 +186,26 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  // Largeur de page compacte (mobile) et marges latérales associées.
+  static const double _compactMaxWidth = 640;
+
+  double get _edge => _isWide ? 24 : 16;
+
+  bool get _isWide => MediaQuery.sizeOf(context).width >= Breakpoints.navRail;
+
   Widget _buildBody() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < Breakpoints.detailTwoColumns) {
+          return _buildCompactBody();
+        }
+        return _buildWideBody();
+      },
+    );
+  }
+
+  // Version mobile : une seule colonne (comportement historique).
+  Widget _buildCompactBody() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,11 +215,7 @@ class _DetailScreenState extends State<DetailScreen> {
           category: _recipe.category,
         ),
         const SizedBox(height: 12),
-        HeroImage(
-          imageUrl: _recipe.thumbnail,
-          time: _meta.time,
-          emoji: _meta.emoji,
-        ),
+        HeroImage(imageUrl: _recipe.thumbnail, time: _meta.time),
         const SizedBox(height: 16),
         Text(
           _recipe.name,
@@ -225,6 +245,85 @@ class _DetailScreenState extends State<DetailScreen> {
         const SizedBox(height: 18),
         ChefTipCard(tip: _meta.chefTip),
         const SizedBox(height: 20),
+        PortionAdjuster(
+          portions: _portions,
+          basePortions: _recipe.basePortions,
+          onChanged: _setPortions,
+        ),
+        const SizedBox(height: 20),
+        IngredientList(
+          ingredients: _recipe.ingredients,
+          basePortions: _recipe.basePortions,
+          portions: _portions,
+        ),
+        const SizedBox(height: 20),
+        PreparationList(steps: _splitInstructions(_recipe.instructions)),
+      ],
+    );
+  }
+
+  // Version grand écran : le contenu est réparti en deux colonnes. La
+  // gauche contient l'image et la présentation (note, titre, description,
+  // infos, astuce) ; la droite l'ajusteur de portions, les ingrédients et
+  // la préparation.
+  Widget _buildWideBody() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 5, child: _buildWideLeftColumn()),
+        const SizedBox(width: 28),
+        Expanded(flex: 6, child: _buildWideRightColumn()),
+      ],
+    );
+  }
+
+  Widget _buildWideLeftColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RatingRow(
+          rating: _meta.rating,
+          reviews: _meta.reviews,
+          category: _recipe.category,
+        ),
+        const SizedBox(height: 12),
+        HeroImage(imageUrl: _recipe.thumbnail, time: _meta.time),
+        const SizedBox(height: 16),
+        Text(
+          _recipe.name,
+          style: const TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            color: AppPalette.textDark,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          _meta.description,
+          style: const TextStyle(
+            fontSize: 15,
+            color: AppPalette.textMuted,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 22),
+        InfoGrid(
+          basePortions: _recipe.basePortions,
+          cookTime: _meta.time,
+          difficulty: _meta.difficulty,
+          energy: _meta.kcal,
+        ),
+        const SizedBox(height: 22),
+        ChefTipCard(tip: _meta.chefTip),
+      ],
+    );
+  }
+
+  Widget _buildWideRightColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         PortionAdjuster(
           portions: _portions,
           basePortions: _recipe.basePortions,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../theme/app_palette.dart';
+import '../utils/responsive.dart';
 import '../widgets/feedback_state.dart';
 import '../widgets/home_header.dart';
 import '../widgets/recipe_card.dart';
@@ -103,12 +104,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: BoxConstraints(
+            maxWidth: contentMaxWidth(MediaQuery.sizeOf(context).width),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HomeHeader(),
-              const SizedBox(height: 20),
+              // Grand écran : la marque est portée par le rail latéral.
+              if (MediaQuery.sizeOf(context).width < Breakpoints.navRail) ...[
+                const HomeHeader(),
+                const SizedBox(height: 20),
+              ],
               _selectedCategory == null
                   ? _buildCategoryList()
                   : _buildCategoryRecipes(),
@@ -134,12 +140,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 600 ? 3 : 2;
+            final columns = gridColumnsFor(constraints.maxWidth);
 
             if (_loading) {
               return ResponsiveGrid(
                 columns: columns,
-                children: List.generate(columns * 3, (_) => const SkeletonCard()),
+                children: List.generate(
+                  columns * 3,
+                  (_) => const SkeletonCard(),
+                ),
               );
             }
             if (_error) {
@@ -158,10 +167,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             return ResponsiveGrid(
               columns: columns,
               children: _categories
-                  .map((name) => _CategoryTile(
-                        name: name,
-                        onTap: () => _selectCategory(name),
-                      ))
+                  .map(
+                    (name) => _CategoryTile(
+                      name: name,
+                      onTap: () => _selectCategory(name),
+                    ),
+                  )
                   .toList(),
             );
           },
@@ -186,7 +197,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               child: const SizedBox(
                 width: 32,
                 height: 32,
-                child: Icon(Icons.arrow_back, size: 20, color: AppPalette.textDark),
+                child: Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: AppPalette.textDark,
+                ),
               ),
             ),
             const SizedBox(width: 4),
@@ -201,16 +216,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 600 ? 3 : 2;
+            final columns = gridColumnsFor(constraints.maxWidth);
 
             if (_recipesLoading) {
               return ResponsiveGrid(
                 columns: columns,
-                children: List.generate(columns * 3, (_) => const SkeletonCard()),
+                children: List.generate(
+                  columns * 3,
+                  (_) => const SkeletonCard(),
+                ),
               );
             }
             if (_recipesError) {
-              return ErrorState(onRetry: () => _selectCategory(_selectedCategory!));
+              return ErrorState(
+                onRetry: () => _selectCategory(_selectedCategory!),
+              );
             }
             if (_recipes.isEmpty) {
               return EmptyState(
@@ -223,7 +243,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
             return ResponsiveGrid(
               columns: columns,
-              children: _recipes.map((recipe) => _buildRecipeCard(recipe)).toList(),
+              children: _recipes
+                  .map((recipe) => _buildRecipeCard(recipe))
+                  .toList(),
             );
           },
         ),
@@ -275,7 +297,8 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = _categoryColors[name.hashCode.abs() % _categoryColors.length];
+    final background =
+        _categoryColors[name.hashCode.abs() % _categoryColors.length];
     final icon = _categoryIcons[name] ?? Icons.restaurant_menu;
 
     return GestureDetector(

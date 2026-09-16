@@ -1,7 +1,7 @@
 // ============================================================================
 // FICHIER : recipe_meta.dart
 // ROLE    : Dériver les informations d'affichage qu'une recette TheMealDB ne
-//           fournit pas directement (note, durée, calories, difficulté, emoji,
+//           fournit pas directement (note, durée, calories, difficulté,
 //           description…). Les valeurs sont déterministes : elles ne changent
 //           pas entre deux affichages de la même recette.
 // ============================================================================
@@ -19,7 +19,6 @@ class RecipeMeta {
     required this.tag,
     required this.tagIsGreen,
     required this.difficulty,
-    required this.emoji,
     required this.chefTip,
   });
 
@@ -31,7 +30,6 @@ class RecipeMeta {
   final String tag;
   final bool tagIsGreen;
   final String difficulty;
-  final String emoji;
   final String chefTip;
 
   factory RecipeMeta.from(Recipe recipe) {
@@ -46,26 +44,8 @@ class RecipeMeta {
       tag: _buildTag(recipe),
       tagIsGreen: _isGreen(recipe.category, recipe.tags),
       difficulty: _buildDifficulty(recipe, hash),
-      emoji: RecipeMeta.emojiFor(recipe.category),
       chefTip: _buildChefTip(recipe, hash),
     );
-  }
-
-  /// Emoji d'illustration associé à la catégorie de la recette.
-  static String emojiFor(String category) {
-    final c = category.trim().toLowerCase();
-    if (c.isEmpty) return '🍽️';
-    if (c.contains('chicken')) return '🍗';
-    if (c.contains('beef')) return '🥩';
-    if (c.contains('seafood') || c.contains('fish')) return '🐟';
-    if (c.contains('pasta')) return '🍝';
-    if (c.contains('dessert') || c.contains('cake')) return '🍰';
-    if (c.contains('vegetarian') || c.contains('vegan')) return '🥦';
-    if (c.contains('lamb') || c.contains('goat')) return '🍖';
-    if (c.contains('pork')) return '🥓';
-    if (c.contains('breakfast')) return '🍳';
-    if (c.contains('side') || c.contains('starter')) return '🥗';
-    return '🍽️';
   }
 
   // --------------------------------------------------------------------------
