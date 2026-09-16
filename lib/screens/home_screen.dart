@@ -12,6 +12,7 @@ import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_palette.dart';
+import '../utils/responsive.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/feedback_state.dart';
@@ -65,17 +66,23 @@ class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
   String? _selectedCategory;
 
+  // Sur grand écran : rail latéral dépliable (réduit = icônes seules).
+  bool _railExpanded = true;
+
+  // Navigateur interne du contenu : le rail / la barre du bas restent
+  // affichés pendant que les écrans secondaires (détail, toutes les recettes)
+  // se poussent dans la zone de contenu.
+  final GlobalKey<NavigatorState> _contentKey = GlobalKey<NavigatorState>();
+
   List<Recipe> _trendingCache = [];
   List<Recipe> _baseRecipes = [];
 
   List<Recipe> _allRecipes = [];
   bool _allLoading = false;
   bool _allError = false;
-  bool _allOffline = false;
 
   bool _loading = true;
   bool _error = false;
-  bool _offline = false;
 
   @override
   void initState() {
@@ -114,53 +121,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _loading = true;
       _error = false;
-      _offline = false;
     });
 
-    // 1) Cache : on évite de marteler /random.php à chaque lancement.
-    final cached = await _database.getTrendingCache();
-    if (cached != null &&
-        cached.recipes.isNotEmpty &&
-        DateTime.now().difference(cached.savedAt) <
-            DatabaseService.trendingCacheDuration) {
-      if (!mounted) return;
-      setState(() {
-        _trendingCache = cached.recipes;
-        if (_selectedCategory == null &&
-            _searchController.text.trim().isEmpty) {
-          _baseRecipes = cached.recipes;
-        }
-        _loading = false;
-      });
-      return;
-    }
-
-    // 2) Appel réseau.
     final List<Recipe> recipes;
     try {
       recipes = await _api.getRandomMeals(6);
     } on ApiException {
-      // Sans connexion : on retombe sur la liste en cache, même ancienne.
-      if (cached != null && cached.recipes.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _trendingCache = cached.recipes;
-          if (_selectedCategory == null &&
-              _searchController.text.trim().isEmpty) {
-            _baseRecipes = cached.recipes;
-          }
-          _loading = false;
-          _offline = true;
-        });
-        return;
-      }
       if (mounted) setState(() => _error = true);
       if (mounted) setState(() => _loading = false);
       return;
     }
 
-    if (!mounted) return;
-    await _database.saveTrendingCache(recipes);
     if (!mounted) return;
     setState(() {
       _trendingCache = recipes;
@@ -168,48 +139,24 @@ class _HomeScreenState extends State<HomeScreen> {
         _baseRecipes = recipes;
       }
       _loading = false;
-      _offline = false;
     });
   }
 
-  // « Toutes les recettes » : cache d'abord (24 h), sinon composition par
-  // catégorie via l'API. En cas d'échec réseau, on retombe sur le cache,
-  // même ancien, en signalant le mode hors-ligne.
+  // « Toutes les recettes » : composition par catégorie via l'API. Si
+  // l'appel échoue, la section affiche son état d'erreur.
   Future<void> _loadAllRecipes() async {
     setState(() {
       _allLoading = true;
       _allError = false;
-      _allOffline = false;
     });
-
-    final cached = await _database.getAllRecipesCache();
-    if (cached != null &&
-        cached.recipes.isNotEmpty &&
-        DateTime.now().difference(cached.savedAt) <
-            DatabaseService.allRecipesCacheDuration) {
-      if (!mounted) return;
-      setState(() {
-        _allRecipes = cached.recipes;
-        _allLoading = false;
-      });
-      return;
-    }
 
     final List<Recipe> recipes;
     try {
       final categories = await _api.getCategories();
-      recipes =
-          categories.isEmpty ? [] : await _api.getRecipesByCategories(categories);
+      recipes = categories.isEmpty
+          ? []
+          : await _api.getRecipesByCategories(categories);
     } on ApiException {
-      if (cached != null && cached.recipes.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _allRecipes = cached.recipes;
-          _allLoading = false;
-          _allOffline = true;
-        });
-        return;
-      }
       if (!mounted) return;
       setState(() {
         _allError = true;
@@ -219,12 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (!mounted) return;
-    await _database.saveAllRecipesCache(recipes);
-    if (!mounted) return;
     setState(() {
       _allRecipes = recipes;
       _allLoading = false;
-      _allOffline = false;
     });
   }
 
@@ -278,9 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _searchController.clear();
       _selectedCategory = null;
-      _baseRecipes = _trendingCache.isNotEmpty
-          ? _trendingCache
-          : _baseRecipes;
+      _baseRecipes = _trendingCache.isNotEmpty ? _trendingCache : _baseRecipes;
     });
     if (_trendingCache.isEmpty) _loadTrending();
   }
@@ -333,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openDetail(Recipe recipe) {
-    Navigator.of(context).push(
+    _contentKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => DetailScreen(
           recipe: recipe,
@@ -356,13 +298,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Écran pleine page listant toutes les recettes chargées.
   void _openAllRecipes() {
-    Navigator.of(context).push(
+    _contentKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => AllRecipesScreen(
           recipes: _allRecipes,
           loading: _allLoading,
           error: _allError,
-          offline: _allOffline,
           favorites: _favorites,
           onRetry: _loadAllRecipes,
           onOpenRecipe: _openDetail,
@@ -378,20 +319,192 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width >= Breakpoints.navRail) {
+      return _buildDesktopLayout();
+    }
+    return Scaffold(
+      backgroundColor: AppPalette.background,
+      body: SafeArea(bottom: false, child: _contentArea()),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _navIndex,
+        onSelect: _selectTab,
+      ),
+    );
+  }
+
+  // Grand écran : rail de navigation latéral + contenu à côté.
+  Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: AppPalette.background,
       body: SafeArea(
         bottom: false,
-        child: switch (_navIndex) {
-          1 => _buildCategoriesTab(),
-          2 => _buildFavoritesTab(),
-          _ => _buildHomeBody(),
-        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildNavigationRail(),
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppPalette.thinBorder,
+            ),
+            Expanded(child: _contentArea()),
+          ],
+        ),
       ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _navIndex,
-        onSelect: (index) => setState(() => _navIndex = index),
+    );
+  }
+
+  // Zone de contenu : un navigateur dédié pour que le rail / la barre du bas
+  // restent visibles sur toutes les pages (onglets + écrans secondaires).
+  Widget _contentArea() {
+    return Navigator(
+      key: _contentKey,
+      onGenerateInitialRoutes: (navigator, initialRoute) {
+        return [
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/tab'),
+            builder: (_) => _buildTab(_navIndex),
+          ),
+        ];
+      },
+    );
+  }
+
+  // Changement d'onglet : on referme les écrans secondaires puis on remplace
+  // la page racine par l'onglet choisi.
+  void _selectTab(int index) {
+    final nav = _contentKey.currentState;
+    if (nav == null) return;
+    nav.popUntil((route) => route.isFirst);
+    if (index == _navIndex) return;
+    nav.pushReplacement(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/tab'),
+        builder: (_) => _buildTab(index),
       ),
+    );
+    setState(() => _navIndex = index);
+  }
+
+  Widget _buildTab(int index) {
+    return switch (index) {
+      1 => _buildCategoriesTab(),
+      2 => _buildFavoritesTab(),
+      _ => _buildHomeBody(),
+    };
+  }
+
+  Widget _buildNavigationRail() {
+    return NavigationRail(
+      backgroundColor: AppPalette.card,
+      extended: _railExpanded,
+      selectedIndex: _navIndex,
+      onDestinationSelected: _selectTab,
+      // Déplié : le label est affiché à côté de l'icône (extended).
+      // Replié : seules les icônes restent visibles.
+      labelType: NavigationRailLabelType.none,
+      leading: _buildRailBranding(),
+      trailing: _buildRailToggle(),
+      selectedIconTheme: const IconThemeData(color: AppPalette.brown),
+      unselectedIconTheme: const IconThemeData(color: AppPalette.textMuted),
+      selectedLabelTextStyle: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: AppPalette.brown,
+      ),
+      unselectedLabelTextStyle: const TextStyle(
+        fontSize: 13,
+        color: AppPalette.textMuted,
+      ),
+      destinations: const [
+        NavigationRailDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
+          label: Text('Accueil'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.grid_view_outlined),
+          selectedIcon: Icon(Icons.grid_view),
+          label: Text('Catégories'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.favorite_border),
+          selectedIcon: Icon(Icons.favorite),
+          label: Text('Favoris'),
+        ),
+      ],
+    );
+  }
+
+// Marque du rail : icône seule quand repliée, icône + nom quand dépliée.
+  Widget _buildRailBranding() {
+    final brand = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF2A93B), Color(0xFFD9662B)],
+            ),
+          ),
+          child: const Icon(
+            Icons.restaurant_menu,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+        if (_railExpanded) ...[
+          const SizedBox(width: 10),
+          Text(
+            'RecipeBook',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppPalette.textDark,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    // Déplié : logo aligné à gauche comme les icônes des destinations.
+    // Replié : centré, comme les icônes dans le rail réduit.
+    return Align(
+      heightFactor: 1.0,
+      alignment: _railExpanded ? Alignment.centerLeft : Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: brand,
+      ),
+    );
+  }
+
+  // Bouton en bas du rail : déplie / replie la barre latérale.
+  Widget _buildRailToggle() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Divider(height: 1, thickness: 1, color: AppPalette.thinBorder),
+        IconButton(
+          tooltip: _railExpanded
+              ? 'Réduire la barre latérale'
+              : 'Agrandir la barre latérale',
+          onPressed: () => setState(() => _railExpanded = !_railExpanded),
+          icon: Icon(
+            _railExpanded
+                ? Icons.keyboard_double_arrow_left
+                : Icons.keyboard_double_arrow_right,
+          ),
+          color: AppPalette.textMuted,
+        ),
+      ],
     );
   }
 
@@ -415,72 +528,84 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const HomeHeader(),
-              const SizedBox(height: 20),
-              const HomeGreeting(),
-              const SizedBox(height: 16),
-              HomeSearchBar(
-                controller: _searchController,
-                onSubmitted: () {
-                  final query = _searchController.text.trim();
-                  if (query.isNotEmpty) {
-                    _searchRecipes(query);
-                  } else {
-                    setState(() => _baseRecipes = _trendingCache);
-                    if (_trendingCache.isEmpty) _loadTrending();
-                  }
-                },
-              ),  // fin HomeSearchBar
-              if (_offline) ...[
-                const SizedBox(height: 14),
-                _buildOfflineNotice(),
-              ],
-              const SizedBox(height: 24),
-              const SectionHeader(title: 'Catégories populaires'),
-              const SizedBox(height: 14),
-              _buildCategories(),
-              const SizedBox(height: 24),
-              _buildTrendingHeader(),
-              const SizedBox(height: 14),
-              _buildTrendingContent(),
-              if (_showAllRecipesSection) ...[
-                const SizedBox(height: 24),
-                _buildAllRecipesSection(),
-              ],
+    // Grand écran : la marque RecipeBook est portée par le rail latéral, le
+    // contenu commence donc directement par le message de bienvenue.
+    final isWide = MediaQuery.sizeOf(context).width >= Breakpoints.navRail;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: contentMaxWidth(MediaQuery.sizeOf(context).width),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            if (!isWide) ...[
+              SliverToBoxAdapter(child: _pad(const HomeHeader())),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
             ],
-          ),
+            SliverToBoxAdapter(child: _pad(const HomeGreeting())),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickySearchHeaderDelegate(
+                child: _buildStickySearchHeader(),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(child: _pad(_buildTrendingHeader())),
+            const SliverToBoxAdapter(child: SizedBox(height: 14)),
+            SliverToBoxAdapter(child: _pad(_buildTrendingContent())),
+            if (_showAllRecipesSection) ...[
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(child: _pad(_buildAllRecipesSection())),
+            ],
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
         ),
       ),
     );
   }
 
-  // Avis discret quand la liste affichée provient du cache hors-ligne.
-  Widget _buildOfflineNotice() {
+  // Marge latérale commune du contenu défilant (16 px, comme la barre
+  // collante ci-dessous).
+  Widget _pad(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: child,
+    );
+  }
+
+  // Barre épinglée en haut : recherche + catégories populaires (puces).
+  Widget _buildStickySearchHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppPalette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppPalette.thinBorder),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      decoration: const BoxDecoration(
+        color: AppPalette.background,
+        border: Border(
+          bottom: BorderSide(color: AppPalette.thinBorder, width: 1),
+        ),
       ),
-      child: const Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.cloud_off, size: 16, color: AppPalette.textMuted),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Connexion indisponible — recettes chargées précédemment.',
-              style: TextStyle(fontSize: 12.5, color: AppPalette.textMuted),
+          SizedBox(
+            height: 56,
+            child: HomeSearchBar(
+              controller: _searchController,
+              onSubmitted: () {
+                final query = _searchController.text.trim();
+                if (query.isNotEmpty) {
+                  _searchRecipes(query);
+                } else {
+                  setState(() => _baseRecipes = _trendingCache);
+                  if (_trendingCache.isEmpty) _loadTrending();
+                }
+              },
             ),
           ),
+          const SizedBox(height: 12),
+          SizedBox(height: 48, child: _buildCategories()),
         ],
       ),
     );
@@ -510,16 +635,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTrendingHeader() {
     final count = _visibleRecipes.length;
-    return SectionHeader(
-      title: 'Recettes tendance',
-      badge: '$count au menu',
-    );
+    return SectionHeader(title: 'Recettes tendance', badge: '$count au menu');
   }
 
   Widget _buildTrendingContent() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 600 ? 3 : 2;
+        final columns = gridColumnsFor(constraints.maxWidth);
 
         if (_loading) {
           return ResponsiveGrid(
@@ -528,18 +650,20 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
         if (_error) {
-          return ErrorState(onRetry: () {
-            if (_selectedCategory != null) {
-              final category = _categories.firstWhere(
-                (c) => c.label == _selectedCategory,
-              );
-              _loadCategory(category.apiName);
-            } else if (_searchController.text.trim().isNotEmpty) {
-              _searchRecipes(_searchController.text.trim());
-            } else {
-              _loadTrending();
-            }
-          });
+          return ErrorState(
+            onRetry: () {
+              if (_selectedCategory != null) {
+                final category = _categories.firstWhere(
+                  (c) => c.label == _selectedCategory,
+                );
+                _loadCategory(category.apiName);
+              } else if (_searchController.text.trim().isNotEmpty) {
+                _searchRecipes(_searchController.text.trim());
+              } else {
+                _loadTrending();
+              }
+            },
+          );
         }
 
         final recipes = _visibleRecipes;
@@ -577,12 +701,15 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 600 ? 3 : 2;
+            final columns = gridColumnsFor(constraints.maxWidth);
 
             if (_allLoading) {
               return ResponsiveGrid(
                 columns: columns,
-                children: List.generate(columns * 2, (_) => const SkeletonCard()),
+                children: List.generate(
+                  columns * 2,
+                  (_) => const SkeletonCard(),
+                ),
               );
             }
             if (_allError) {
@@ -594,14 +721,9 @@ class _HomeScreenState extends State<HomeScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_allOffline) ...[
-                  _buildOfflineNotice(),
-                  const SizedBox(height: 16),
-                ],
                 ResponsiveGrid(
                   columns: columns,
-                  children:
-                      preview.map((r) => _buildRecipeCard(r)).toList(),
+                  children: preview.map((r) => _buildRecipeCard(r)).toList(),
                 ),
               ],
             );
@@ -614,10 +736,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEmptyState() {
     return EmptyState(
       title: 'Aucune recette trouvée',
-      message: 'Essayez un autre mot-clé ou explorez une autre catégorie '
+      message:
+          'Essayez un autre mot-clé ou explorez une autre catégorie '
           'pour trouver votre prochaine recette préférée.',
       actionLabel: 'Réinitialiser les filtres',
       onAction: _resetFilters,
     );
   }
+}
+
+// En-tête épinglé de l'accueil : barre de recherche + catégories
+// populaires. Reste collé en haut de l'écran pendant le défilement.
+class _StickySearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _StickySearchHeaderDelegate({required this.child});
+
+  final Widget child;
+
+  // Recherche (56) + écart (12) + puces (48), plus les marges (10+10),
+  // la bordure basse (1) et une petite marge de sécurité (2).
+  static const double extent = 56 + 12 + 48 + 10 + 10 + 1 + 2;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // SizedBox.expand force l'en-tête à occuper toute la hauteur épinglée :
+    // la géométrie (paintExtent == layoutExtent) reste ainsi valide.
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(_StickySearchHeaderDelegate oldDelegate) =>
+      child != oldDelegate.child;
 }

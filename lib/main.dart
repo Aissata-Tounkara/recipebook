@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'screens/home_screen.dart';
+import 'services/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,6 +11,9 @@ Future<void> main() async {
   // n'est pas supporté). Sans cet appel, l'ouverture des box échoue
   // silencieusement sur le web et les favoris ne sont jamais persistés.
   await Hive.initFlutter();
+  // Nettoyage one-shot des anciennes box de cache (tendance / toutes les
+  // recettes) qui n'existent plus — Hive ne stocke que les favoris.
+  await DatabaseService.deleteLegacyCacheBoxes();
   runApp(const RecipeBookApp());
 }
 

@@ -6,11 +6,10 @@ import '../../theme/app_palette.dart';
 import '../../utils/meal_image.dart';
 
 class HeroImage extends StatelessWidget {
-  const HeroImage({super.key, required this.imageUrl, required this.time, required this.emoji});
+  const HeroImage({super.key, required this.imageUrl, required this.time});
 
   final String imageUrl;
   final String time;
-  final String emoji;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +22,7 @@ class HeroImage extends StatelessWidget {
             child: imageUrl.isEmpty
                 ? _imageFallback()
                 : Image.network(
-                    mealImageVariant(imageUrl, size: 'medium'),
+                    mealImageVariant(imageUrl, size: 'large'),
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, progress) =>
                         progress == null ? child : _imageFallback(),
@@ -75,7 +74,11 @@ class HeroImage extends StatelessWidget {
         ),
       ),
       alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 56)),
+      child: const Icon(
+        Icons.restaurant_menu,
+        color: Colors.white,
+        size: 56,
+      ),
     );
   }
 }

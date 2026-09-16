@@ -57,7 +57,6 @@ class RecipeCard extends StatelessWidget {
                   child: _RecipeImage(
                     imageUrl: recipe.thumbnail,
                     thumbnailFile: thumbnailFile,
-                    emoji: meta.emoji,
                   ),
                 ),
                 Positioned(
@@ -231,14 +230,9 @@ class _Tag extends StatelessWidget {
 
 /// Image d'une recette, avec squelette de chargement et repli hors-ligne.
 class _RecipeImage extends StatelessWidget {
-  const _RecipeImage({
-    required this.imageUrl,
-    required this.emoji,
-    this.thumbnailFile,
-  });
+  const _RecipeImage({required this.imageUrl, this.thumbnailFile});
 
   final String imageUrl;
-  final String emoji;
   final File? thumbnailFile;
 
   @override
@@ -254,7 +248,7 @@ class _RecipeImage extends StatelessWidget {
     if (imageUrl.isEmpty) return _fallback();
 
     return Image.network(
-      mealImageVariant(imageUrl, size: 'small'),
+      mealImageVariant(imageUrl, size: 'medium'),
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
@@ -274,7 +268,11 @@ class _RecipeImage extends StatelessWidget {
         ),
       ),
       alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 40)),
+      child: const Icon(
+        Icons.restaurant_menu,
+        color: Colors.white,
+        size: 40,
+      ),
     );
   }
 }

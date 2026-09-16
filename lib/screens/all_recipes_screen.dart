@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/recipe.dart';
 import '../theme/app_palette.dart';
+import '../utils/responsive.dart';
 import '../widgets/feedback_state.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/responsive_grid.dart';
@@ -16,7 +17,6 @@ class AllRecipesScreen extends StatelessWidget {
     required this.recipes,
     required this.loading,
     required this.error,
-    required this.offline,
     required this.favorites,
     required this.onRetry,
     required this.onOpenRecipe,
@@ -26,7 +26,6 @@ class AllRecipesScreen extends StatelessWidget {
   final List<Recipe> recipes;
   final bool loading;
   final bool error;
-  final bool offline;
 
   /// Identifiants des recettes favorites (pour les cœurs des cartes).
   final Set<String> favorites;
@@ -63,7 +62,11 @@ class AllRecipesScreen extends StatelessWidget {
             child: const SizedBox(
               width: 40,
               height: 40,
-              child: Icon(Icons.arrow_back, size: 22, color: AppPalette.textDark),
+              child: Icon(
+                Icons.arrow_back,
+                size: 22,
+                color: AppPalette.textDark,
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -103,15 +106,20 @@ class AllRecipesScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: BoxConstraints(
+            maxWidth: contentMaxWidth(MediaQuery.sizeOf(context).width),
+          ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 600 ? 3 : 2;
+              final columns = gridColumnsFor(constraints.maxWidth);
 
               if (loading) {
                 return ResponsiveGrid(
                   columns: columns,
-                  children: List.generate(columns * 3, (_) => const SkeletonCard()),
+                  children: List.generate(
+                    columns * 3,
+                    (_) => const SkeletonCard(),
+                  ),
                 );
               }
               if (error) {
@@ -120,7 +128,8 @@ class AllRecipesScreen extends StatelessWidget {
               if (recipes.isEmpty) {
                 return EmptyState(
                   title: 'Aucune recette disponible',
-                  message: 'Réessayez dans un instant pour parcourir '
+                  message:
+                      'Réessayez dans un instant pour parcourir '
                       'toutes les recettes.',
                   actionLabel: 'Réessayer',
                   onAction: onRetry,
@@ -130,10 +139,6 @@ class AllRecipesScreen extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (offline) ...[
-                    _buildOfflineNotice(),
-                    const SizedBox(height: 16),
-                  ],
                   ResponsiveGrid(
                     columns: columns,
                     children: recipes.map((r) => _buildCard(r)).toList(),
@@ -143,30 +148,6 @@ class AllRecipesScreen extends StatelessWidget {
             },
           ),
         ),
-      ),
-    );
-  }
-
-  // Avis discret quand la liste provient du cache hors-ligne.
-  Widget _buildOfflineNotice() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppPalette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppPalette.thinBorder),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.cloud_off, size: 16, color: AppPalette.textMuted),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Connexion indisponible — recettes chargées précédemment.',
-              style: TextStyle(fontSize: 12.5, color: AppPalette.textMuted),
-            ),
-          ),
-        ],
       ),
     );
   }
