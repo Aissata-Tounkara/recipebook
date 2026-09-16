@@ -108,4 +108,26 @@ void main() {
 
     expect(find.text('Retirée de vos favoris'), findsOneWidget);
   });
+
+  testWidgets('Sur grand écran, la recette s\'affiche en deux colonnes', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1500, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpDetail(tester);
+
+    expect(find.text('Poulet au curry & lait de coco parfumé'), findsOneWidget);
+    expect(find.text('Nombre de portions'), findsOneWidget);
+
+    // Le titre (colonne gauche) et une quantité d'ingrédient (colonne
+    // droite) occupent bien des colonnes distinctes à l'horizontal.
+    final titleLeft = tester.getTopLeft(
+      find.text('Poulet au curry & lait de coco parfumé'),
+    );
+    final measureLeft = tester.getTopLeft(find.text('600g'));
+    expect(measureLeft.dx, greaterThan(titleLeft.dx + 100));
+  });
 }

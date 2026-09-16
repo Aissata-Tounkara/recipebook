@@ -13,7 +13,7 @@ class HomeGreeting extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
         Text(
-          'Bonjour ! 👋',
+          'Bonjour !',
           style: TextStyle(
             fontSize: 30,
             fontWeight: FontWeight.w800,

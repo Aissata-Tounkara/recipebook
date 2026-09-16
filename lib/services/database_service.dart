@@ -16,24 +16,12 @@ import '../utils/meal_image.dart';
 
 /// Service de gestion des recettes favorites stockées localement.
 class DatabaseService {
+  // Noms des anciennes box de cache (utilisés uniquement pour le nettoyage).
+  static const String _legacyTrendingBoxName = 'trending_cache';
+  static const String _legacyAllRecipesBoxName = 'all_recipes_cache';
+
   static const String _boxName = 'favorites_recipes';
   static const String _thumbsFolder = 'recipe_thumbs';
-  static const String _trendingBoxName = 'trending_cache';
-  static const String _trendingKey = 'trending';
-  static const String _trendingSavedAtKey = 'savedAt';
-  static const String _trendingMealsKey = 'meals';
-  static const String _allRecipesBoxName = 'all_recipes_cache';
-  static const String _allRecipesKey = 'all';
-
-  /// Durée de validité de la liste « tendance » mise en cache.
-  static const Duration trendingCacheDuration = Duration(hours: 24);
-
-  /// Durée de validité de la liste « toutes les recettes » mise en cache.
-  static const Duration allRecipesCacheDuration = Duration(hours: 24);
-
-  /// Délai maximal d'ouverture de la box de cache : le stockage ne doit
-  /// jamais bloquer l'affichage (défensif, utile dans les tests aussi).
-  static const Duration _cacheOpenTimeout = Duration(milliseconds: 250);
 
   final http.Client _client;
 
@@ -42,8 +30,6 @@ class DatabaseService {
   final String? _directory;
 
   Future<Box<Map>>? _boxFuture;
-  Future<Box<Map>>? _trendingBoxFuture;
-  Future<Box<Map>>? _allRecipesBoxFuture;
 
   DatabaseService({http.Client? client, String? directory})
       : _client = client ?? http.Client(),
@@ -90,112 +76,15 @@ class DatabaseService {
     return null;
   }
 
-  // --------------------------------------------------------------------------
-  // Cache des recettes « tendance » (limite l'appel répété à /random.php).
-  // --------------------------------------------------------------------------
-
-  /// Lit la liste « tendance » mise en cache. Renvoie null si aucun cache
-  /// (ou s'il est illisible), accompagné de sa date d'enregistrement.
-  Future<({List<Recipe> recipes, DateTime savedAt})?> getTrendingCache() {
-    return _readTrendingCache().timeout(
-      _cacheOpenTimeout,
-      onTimeout: () => null,
-    );
-  }
-
-  Future<({List<Recipe> recipes, DateTime savedAt})?> _readTrendingCache() async {
-    try {
-      final box = await _openTrendingBox();
-      final value = box.get(_trendingKey);
-      if (value == null) return null;
-
-      final savedAtMs = value[_trendingSavedAtKey] as int?;
-      final meals = value[_trendingMealsKey] as List?;
-      if (savedAtMs == null || meals == null) return null;
-
-      final recipes = <Recipe>[];
-      for (final meal in meals) {
-        try {
-          recipes.add(
-            Recipe.fromStoredJson(Map<String, dynamic>.from(meal as Map)),
-          );
-        } catch (_) {}
-      }
-      if (recipes.isEmpty) return null;
-
-      return (
-        recipes: recipes,
-        savedAt: DateTime.fromMillisecondsSinceEpoch(savedAtMs),
-      );
-    } catch (_) {
-      return null;
+  /// Supprime définitivement les anciennes box de cache (tendance / toutes
+  /// les recettes) qui ne sont plus utilisées — Hive ne stocke que les
+  /// favoris. Best-effort : échec silencieux si les fichiers n'existent pas.
+  static Future<void> deleteLegacyCacheBoxes() async {
+    for (final name in const [_legacyTrendingBoxName, _legacyAllRecipesBoxName]) {
+      try {
+        await Hive.deleteBoxFromDisk(name);
+      } catch (_) {}
     }
-  }
-
-  /// Enregistre la liste « tendance » avec son horodatage (best-effort).
-  Future<void> saveTrendingCache(List<Recipe> recipes) async {
-    if (recipes.isEmpty) return;
-    try {
-      final box = await _openTrendingBox().timeout(_cacheOpenTimeout);
-      await box.put(_trendingKey, {
-        _trendingSavedAtKey: DateTime.now().millisecondsSinceEpoch,
-        _trendingMealsKey: recipes.map((recipe) => recipe.toJson()).toList(),
-      });
-    } catch (_) {}
-  }
-
-  // --------------------------------------------------------------------------
-  // Cache de « toutes les recettes » (composition par catégorie).
-  // --------------------------------------------------------------------------
-
-  /// Lit la liste complète mise en cache, avec sa date d'enregistrement.
-  /// Renvoie null si aucun cache exploitable (ou délai dépassé).
-  Future<({List<Recipe> recipes, DateTime savedAt})?> getAllRecipesCache() {
-    return _readAllRecipesCache().timeout(
-      _cacheOpenTimeout,
-      onTimeout: () => null,
-    );
-  }
-
-  Future<({List<Recipe> recipes, DateTime savedAt})?> _readAllRecipesCache() async {
-    try {
-      final box = await _openAllRecipesBox();
-      final value = box.get(_allRecipesKey);
-      if (value == null) return null;
-
-      final savedAtMs = value[_trendingSavedAtKey] as int?;
-      final meals = value[_trendingMealsKey] as List?;
-      if (savedAtMs == null || meals == null) return null;
-
-      final recipes = <Recipe>[];
-      for (final meal in meals) {
-        try {
-          recipes.add(
-            Recipe.fromStoredJson(Map<String, dynamic>.from(meal as Map)),
-          );
-        } catch (_) {}
-      }
-      if (recipes.isEmpty) return null;
-
-      return (
-        recipes: recipes,
-        savedAt: DateTime.fromMillisecondsSinceEpoch(savedAtMs),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Enregistre la liste complète avec son horodatage (best-effort).
-  Future<void> saveAllRecipesCache(List<Recipe> recipes) async {
-    if (recipes.isEmpty) return;
-    try {
-      final box = await _openAllRecipesBox().timeout(_cacheOpenTimeout);
-      await box.put(_allRecipesKey, {
-        _trendingSavedAtKey: DateTime.now().millisecondsSinceEpoch,
-        _trendingMealsKey: recipes.map((recipe) => recipe.toJson()).toList(),
-      });
-    } catch (_) {}
   }
 
   void dispose() => _client.close();
@@ -208,36 +97,11 @@ class DatabaseService {
     return _boxFuture ??= _openBoxOnce();
   }
 
-  Future<Box<Map>> _openTrendingBox() {
-    return _trendingBoxFuture ??= _openTrendingBoxOnce();
-  }
-
-  Future<Box<Map>> _openAllRecipesBox() {
-    return _allRecipesBoxFuture ??= _openAllRecipesBoxOnce();
-  }
-
   Future<Box<Map>> _openBoxOnce() async {
     if (Hive.isBoxOpen(_boxName)) {
       return Hive.box(_boxName);
     }
     return Hive.openBox<Map>(_boxName, path: await _resolveDirectory());
-  }
-
-  Future<Box<Map>> _openTrendingBoxOnce() async {
-    if (Hive.isBoxOpen(_trendingBoxName)) {
-      return Hive.box(_trendingBoxName);
-    }
-    return Hive.openBox<Map>(_trendingBoxName, path: await _resolveDirectory());
-  }
-
-  Future<Box<Map>> _openAllRecipesBoxOnce() async {
-    if (Hive.isBoxOpen(_allRecipesBoxName)) {
-      return Hive.box(_allRecipesBoxName);
-    }
-    return Hive.openBox<Map>(
-      _allRecipesBoxName,
-      path: await _resolveDirectory(),
-    );
   }
 
   // Dossier de stockage des box Hive. `_directory` (tests) est prioritaire ;
@@ -262,7 +126,7 @@ class DatabaseService {
 
     try {
       final response = await _client
-          .get(Uri.parse(mealImageVariant(thumbUrl, size: 'small')))
+          .get(Uri.parse(mealImageVariant(thumbUrl, size: 'medium')))
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200 || response.bodyBytes.isEmpty) return;
